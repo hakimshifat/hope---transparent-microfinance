@@ -1,0 +1,222 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "Hope Transparent Microfinance" [ref=e6] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e8]
+        - generic [ref=e11]:
+          - generic [ref=e12]: Hope
+          - generic [ref=e13]: Transparent Microfinance
+      - generic [ref=e14]:
+        - generic [ref=e135]:
+          - generic [ref=e136]: Ayesha Begum
+          - generic [ref=e138]: Borrower
+        - button "Logout" [ref=e139] [cursor=pointer]:
+          - img [ref=e140]
+          - text: Logout
+  - generic [ref=e143]:
+    - navigation [ref=e146]:
+      - link "Dashboard" [ref=e147] [cursor=pointer]:
+        - /url: /dashboard
+        - img [ref=e148]
+        - text: Dashboard
+      - link "Profile" [ref=e153] [cursor=pointer]:
+        - /url: /profile
+        - img [ref=e154]
+        - text: Profile
+      - link "Loan Products" [ref=e158] [cursor=pointer]:
+        - /url: /loan-products
+        - img [ref=e159]
+        - text: Loan Products
+      - link "Mock Payment" [ref=e161] [cursor=pointer]:
+        - /url: /mock-payment
+        - img [ref=e162]
+        - text: Mock Payment
+      - link "Ledger" [ref=e164] [cursor=pointer]:
+        - /url: /ledger
+        - img [ref=e165]
+        - text: Ledger
+      - link "Receipts" [ref=e168] [cursor=pointer]:
+        - /url: /receipts
+        - img [ref=e169]
+        - text: Receipts
+    - main [ref=e171]:
+      - generic [ref=e172]:
+        - generic [ref=e173]:
+          - generic [ref=e174]:
+            - generic [ref=e175]:
+              - img [ref=e176]
+              - text: Secure Session
+            - heading "Welcome back, Ayesha" [level=1] [ref=e179]
+            - paragraph [ref=e180]: Manage your active loan, payments, and transparent ledger.
+          - generic [ref=e182]:
+            - generic [ref=e183]: Profile Status
+            - generic [ref=e185]: Verified
+        - generic [ref=e186]:
+          - img [ref=e188]
+          - generic [ref=e190]: "Attention: 1 installment is overdue. Please make a payment immediately."
+        - generic [ref=e191]:
+          - generic [ref=e193]:
+            - generic [ref=e194]: Repayment Progress
+            - generic [ref=e195]: 33%
+          - generic [ref=e198]:
+            - generic [ref=e199]:
+              - generic [ref=e200]:
+                - img [ref=e202]
+                - generic [ref=e204]: Total Payable
+              - generic [ref=e205]: ৳26,400
+            - generic [ref=e206]:
+              - generic [ref=e207]:
+                - img [ref=e209]
+                - generic [ref=e211]: Total Paid
+              - generic [ref=e212]: ৳8,800
+            - generic [ref=e213]:
+              - generic [ref=e214]:
+                - img [ref=e216]
+                - generic [ref=e218]: Remaining
+              - generic [ref=e219]: ৳17,600
+            - generic [ref=e220]:
+              - generic [ref=e221]:
+                - img [ref=e223]
+                - generic [ref=e227]: Next Due
+              - generic [ref=e228]: May 13, 2026
+        - generic [ref=e229]:
+          - generic [ref=e230]:
+            - heading "Active Loan" [level=2] [ref=e231]
+            - generic [ref=e235]:
+              - generic [ref=e236]:
+                - generic [ref=e237]:
+                  - generic [ref=e238]: Principal Amount
+                  - generic [ref=e239]: ৳24,000
+                - img [ref=e241]
+              - generic [ref=e243]:
+                - generic [ref=e244]:
+                  - generic [ref=e245]: Service Charge
+                  - generic [ref=e246]: ৳2,400
+                - generic [ref=e247]:
+                  - generic [ref=e248]: Installment
+                  - generic [ref=e249]: ৳2,200
+              - generic [ref=e250]:
+                - generic [ref=e251]: Hope Digital Microfinance
+                - generic [ref=e252]: Active
+          - generic [ref=e253]:
+            - heading "Make a Payment" [level=2] [ref=e254]
+            - generic [ref=e256]:
+              - 'button "Installment #5 Due May 13, 2026 ৳2,200" [ref=e257] [cursor=pointer]':
+                - generic [ref=e258]:
+                  - img [ref=e260]
+                  - generic [ref=e262]:
+                    - generic [ref=e263]: "Installment #5"
+                    - generic [ref=e264]: Due May 13, 2026
+                - generic [ref=e265]: ৳2,200
+              - 'button "Installment #6 Due May 20, 2026 ৳2,200" [ref=e266] [cursor=pointer]':
+                - generic [ref=e267]:
+                  - img [ref=e269]
+                  - generic [ref=e271]:
+                    - generic [ref=e272]: "Installment #6"
+                    - generic [ref=e273]: Due May 20, 2026
+                - generic [ref=e274]: ৳2,200
+              - 'button "Installment #7 Due May 27, 2026 ৳2,200" [ref=e275] [cursor=pointer]':
+                - generic [ref=e276]:
+                  - img [ref=e278]
+                  - generic [ref=e280]:
+                    - generic [ref=e281]: "Installment #7"
+                    - generic [ref=e282]: Due May 27, 2026
+                - generic [ref=e283]: ৳2,200
+        - generic [ref=e284]:
+          - generic [ref=e285]:
+            - heading "Ledger & Schedule" [level=2] [ref=e286]
+            - generic [ref=e287]: Full Transparency
+          - table [ref=e289]:
+            - rowgroup [ref=e290]:
+              - row "Installment Due Date Amount Due Amount Paid Status" [ref=e291]:
+                - columnheader "Installment" [ref=e292]
+                - columnheader "Due Date" [ref=e293]
+                - columnheader "Amount Due" [ref=e294]
+                - columnheader "Amount Paid" [ref=e295]
+                - columnheader "Status" [ref=e296]
+            - rowgroup [ref=e297]:
+              - row "#1 Apr 15, 2026 ৳2,200 ৳2,200 Paid" [ref=e298]:
+                - cell "#1" [ref=e299]
+                - cell "Apr 15, 2026" [ref=e300]
+                - cell "৳2,200" [ref=e301]
+                - cell "৳2,200" [ref=e302]
+                - cell "Paid" [ref=e303]:
+                  - generic [ref=e304]: Paid
+              - row "#2 Apr 22, 2026 ৳2,200 ৳2,200 Paid" [ref=e305]:
+                - cell "#2" [ref=e306]
+                - cell "Apr 22, 2026" [ref=e307]
+                - cell "৳2,200" [ref=e308]
+                - cell "৳2,200" [ref=e309]
+                - cell "Paid" [ref=e310]:
+                  - generic [ref=e311]: Paid
+              - row "#3 Apr 29, 2026 ৳2,200 ৳2,200 Paid" [ref=e312]:
+                - cell "#3" [ref=e313]
+                - cell "Apr 29, 2026" [ref=e314]
+                - cell "৳2,200" [ref=e315]
+                - cell "৳2,200" [ref=e316]
+                - cell "Paid" [ref=e317]:
+                  - generic [ref=e318]: Paid
+              - row "#4 May 6, 2026 ৳2,200 ৳2,200 Paid" [ref=e319]:
+                - cell "#4" [ref=e320]
+                - cell "May 6, 2026" [ref=e321]
+                - cell "৳2,200" [ref=e322]
+                - cell "৳2,200" [ref=e323]
+                - cell "Paid" [ref=e324]:
+                  - generic [ref=e325]: Paid
+              - row "#5 May 13, 2026 ৳2,200 ৳0 Overdue" [ref=e326]:
+                - cell "#5" [ref=e327]
+                - cell "May 13, 2026" [ref=e328]
+                - cell "৳2,200" [ref=e329]
+                - cell "৳0" [ref=e330]
+                - cell "Overdue" [ref=e331]:
+                  - generic [ref=e332]: Overdue
+              - row "#6 May 20, 2026 ৳2,200 ৳0 Upcoming" [ref=e333]:
+                - cell "#6" [ref=e334]
+                - cell "May 20, 2026" [ref=e335]
+                - cell "৳2,200" [ref=e336]
+                - cell "৳0" [ref=e337]
+                - cell "Upcoming" [ref=e338]:
+                  - generic [ref=e339]: Upcoming
+              - row "#7 May 27, 2026 ৳2,200 ৳0 Upcoming" [ref=e340]:
+                - cell "#7" [ref=e341]
+                - cell "May 27, 2026" [ref=e342]
+                - cell "৳2,200" [ref=e343]
+                - cell "৳0" [ref=e344]
+                - cell "Upcoming" [ref=e345]:
+                  - generic [ref=e346]: Upcoming
+              - row "#8 Jun 3, 2026 ৳2,200 ৳0 Upcoming" [ref=e347]:
+                - cell "#8" [ref=e348]
+                - cell "Jun 3, 2026" [ref=e349]
+                - cell "৳2,200" [ref=e350]
+                - cell "৳0" [ref=e351]
+                - cell "Upcoming" [ref=e352]:
+                  - generic [ref=e353]: Upcoming
+              - row "#9 Jun 10, 2026 ৳2,200 ৳0 Upcoming" [ref=e354]:
+                - cell "#9" [ref=e355]
+                - cell "Jun 10, 2026" [ref=e356]
+                - cell "৳2,200" [ref=e357]
+                - cell "৳0" [ref=e358]
+                - cell "Upcoming" [ref=e359]:
+                  - generic [ref=e360]: Upcoming
+              - row "#10 Jun 17, 2026 ৳2,200 ৳0 Upcoming" [ref=e361]:
+                - cell "#10" [ref=e362]
+                - cell "Jun 17, 2026" [ref=e363]
+                - cell "৳2,200" [ref=e364]
+                - cell "৳0" [ref=e365]
+                - cell "Upcoming" [ref=e366]:
+                  - generic [ref=e367]: Upcoming
+              - row "#11 Jun 24, 2026 ৳2,200 ৳0 Upcoming" [ref=e368]:
+                - cell "#11" [ref=e369]
+                - cell "Jun 24, 2026" [ref=e370]
+                - cell "৳2,200" [ref=e371]
+                - cell "৳0" [ref=e372]
+                - cell "Upcoming" [ref=e373]:
+                  - generic [ref=e374]: Upcoming
+              - row "#12 Jul 1, 2026 ৳2,200 ৳0 Upcoming" [ref=e375]:
+                - cell "#12" [ref=e376]
+                - cell "Jul 1, 2026" [ref=e377]
+                - cell "৳2,200" [ref=e378]
+                - cell "৳0" [ref=e379]
+                - cell "Upcoming" [ref=e380]:
+                  - generic [ref=e381]: Upcoming

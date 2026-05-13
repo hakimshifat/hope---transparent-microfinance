@@ -1,0 +1,79 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "Hope Transparent Microfinance" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - img [ref=e8]
+        - generic [ref=e11]:
+          - generic [ref=e12]: Hope
+          - generic [ref=e13]: Transparent Microfinance
+      - generic [ref=e14]:
+        - link "Login" [ref=e15] [cursor=pointer]:
+          - /url: /login
+        - link "Register" [ref=e16] [cursor=pointer]:
+          - /url: /register
+  - generic [ref=e17]:
+    - complementary [ref=e18]:
+      - navigation [ref=e20]:
+        - link "Home" [ref=e21] [cursor=pointer]:
+          - /url: /
+          - img [ref=e22]
+          - text: Home
+        - link "About" [ref=e25] [cursor=pointer]:
+          - /url: /about
+          - img [ref=e26]
+          - text: About
+    - main [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e32]:
+          - generic [ref=e33]:
+            - generic [ref=e34]:
+              - img [ref=e35]
+              - text: Bangladesh microfinance workflow MVP
+            - 'heading "Hope: Transparent Microfinance Loan Management System" [level=1] [ref=e38]'
+            - paragraph [ref=e39]: Role-based loan applications, schedule generation, mock repayments, borrower ledger transparency, and overdue case follow-up in one student-friendly full-stack system.
+            - generic [ref=e40]:
+              - link "Register borrower" [ref=e41] [cursor=pointer]:
+                - /url: /register
+                - text: Register borrower
+                - img [ref=e42]
+              - link "Login" [ref=e44] [cursor=pointer]:
+                - /url: /login
+          - generic [ref=e45]:
+            - generic [ref=e46]:
+              - generic [ref=e47]:
+                - img [ref=e48]
+                - generic [ref=e53]: Borrowers
+                - generic [ref=e54]: Profile + verification
+              - generic [ref=e55]:
+                - img [ref=e56]
+                - generic [ref=e59]: Loans
+                - generic [ref=e60]: Approval + schedule
+              - generic [ref=e61]:
+                - img [ref=e62]
+                - generic [ref=e64]: Payments
+                - generic [ref=e65]: Mock review flow
+              - generic [ref=e66]:
+                - img [ref=e67]
+                - generic [ref=e70]: Ledger
+                - generic [ref=e71]: Paid, due, remaining
+            - generic [ref=e73]:
+              - generic [ref=e74]:
+                - generic [ref=e75]: Total payable
+                - generic [ref=e76]: ৳26,400
+              - generic [ref=e77]:
+                - generic [ref=e78]: Paid
+                - generic [ref=e79]: ৳2,200
+              - generic [ref=e80]:
+                - generic [ref=e81]: Overdue
+                - generic [ref=e82]: ৳2,200
+        - generic [ref=e83]:
+          - generic [ref=e84]:
+            - heading "Borrower" [level=2] [ref=e85]
+            - paragraph [ref=e86]: Apply, pay installments, view transparent ledger and receipts.
+          - generic [ref=e87]:
+            - heading "Supervisor" [level=2] [ref=e88]
+            - paragraph [ref=e89]: Approve loans, review payments, assign overdue cases.
+          - generic [ref=e90]:
+            - heading "Field Officer" [level=2] [ref=e91]
+            - paragraph [ref=e92]: Handle assigned overdue borrowers and submit visit logs.

@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    @apply bg-background text-slate-200 font-sans selection:bg-primary-500/30 selection:text-primary-100;
+  }
+
+  /* Custom Scrollbar for a premium feel */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-surface;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-700 rounded-full hover:bg-slate-500 transition-colors;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-surface/70 backdrop-blur-xl border border-white/10 shadow-glass-premium relative overflow-hidden transition-all duration-500;
+  }
+  
+  .glass-panel::before {
+    content: "";
+    @apply absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none opacity-50;
+  }
+  
+  .glass-panel-light {
+    @apply bg-white/5 backdrop-blur-lg border border-white/10 relative overflow-hidden transition-all duration-500;
+  }
+
+  .glass-panel-light::before {
+    content: "";
+    @apply absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none opacity-30;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-400 via-accent-light to-primary-400 bg-[length:200%_auto] animate-shimmer;
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-glow;
+  }
+
+  .hover-glow {
+    @apply transition-all duration-300 hover:shadow-glow hover:border-primary-500/50;
+  }
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  @apply focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+    color: black;
+  }
+}

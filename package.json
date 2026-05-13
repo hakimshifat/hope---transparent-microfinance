@@ -1,0 +1,13 @@
+{
+  "name": "hope-transparent-microfinance",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-stack MVP for role-based microfinance loan management",
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "seed": "npm --prefix backend run seed",
+    "build": "npm --prefix frontend run build"
+  }
+}
