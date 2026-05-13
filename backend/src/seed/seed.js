@@ -8,6 +8,7 @@ const Installment = require("../models/Installment");
 const Loan = require("../models/Loan");
 const LoanApplication = require("../models/LoanApplication");
 const LoanProduct = require("../models/LoanProduct");
+const Notification = require("../models/Notification");
 const OverdueCase = require("../models/OverdueCase");
 const Payment = require("../models/Payment");
 const Receipt = require("../models/Receipt");
@@ -28,6 +29,7 @@ async function clearDatabase() {
     Loan.deleteMany({}),
     LoanApplication.deleteMany({}),
     LoanProduct.deleteMany({}),
+    Notification.deleteMany({}),
     OverdueCase.deleteMany({}),
     Payment.deleteMany({}),
     Receipt.deleteMany({}),

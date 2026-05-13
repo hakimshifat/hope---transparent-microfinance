@@ -24,6 +24,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { title } from "../utils/format";
+import NotificationBell from "./NotificationBell";
 
 function publicLinks() {
   return [
@@ -142,6 +143,7 @@ export default function Layout() {
                   <span className="h-1 w-1 bg-primary-500 rounded-full"></span>
                   <span className="text-primary-300">{title(user.role)}</span>
                 </div>
+                <NotificationBell />
                 <button
                   onClick={handleLogout}
                   className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
@@ -193,6 +195,15 @@ export default function Layout() {
 
           {open && (
             <div className="glass-panel rounded-2xl p-4 md:hidden no-print mb-6 opacity-0 animate-scale-in">
+              {user ? (
+                <div className="mb-4 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-bold text-white">{user.fullName}</div>
+                    <div className="text-xs font-medium text-primary-300">{title(user.role)}</div>
+                  </div>
+                  <NotificationBell compact />
+                </div>
+              ) : null}
               {nav}
               <div className="mt-4 border-t border-white/10 pt-4">
                 {user ? (

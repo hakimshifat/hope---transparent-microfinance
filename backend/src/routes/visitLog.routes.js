@@ -3,6 +3,7 @@ const OverdueCase = require("../models/OverdueCase");
 const VisitLog = require("../models/VisitLog");
 const asyncHandler = require("../utils/asyncHandler");
 const writeAudit = require("../utils/audit");
+const { notifyUser } = require("../utils/notify");
 const { protect, authorize } = require("../middleware/auth");
 
 const router = express.Router();
@@ -47,6 +48,22 @@ router.post(
       visitLog._id,
       `Submitted visit log for overdue case ${caseId}`
     );
+
+    if (caseStatus === "resolved") {
+      await notifyUser(overdueCase.borrowerId, {
+        title: "Visit follow-up resolved",
+        message: "Your field visit follow-up was marked as resolved.",
+        type: "success",
+        link: "/ledger"
+      });
+    } else if (nextFollowUpDate) {
+      await notifyUser(overdueCase.borrowerId, {
+        title: "Follow-up scheduled",
+        message: `A field follow-up was scheduled for ${new Date(nextFollowUpDate).toLocaleDateString("en-BD")}.`,
+        type: "warning",
+        link: "/borrower"
+      });
+    }
 
     res.status(201).json(visitLog);
   })

@@ -2,6 +2,7 @@ const express = require("express");
 const BorrowerProfile = require("../models/BorrowerProfile");
 const asyncHandler = require("../utils/asyncHandler");
 const writeAudit = require("../utils/audit");
+const { notifyUser } = require("../utils/notify");
 const { protect, authorize } = require("../middleware/auth");
 
 const router = express.Router();
@@ -56,6 +57,13 @@ router.post(
       `Borrower ${req.user.fullName} created their profile`
     );
 
+    await notifyUser(req.user._id, {
+      title: "Profile submitted",
+      message: "Your borrower profile was submitted for verification.",
+      type: "info",
+      link: "/profile"
+    });
+
     res.status(201).json(profile);
   })
 );
@@ -92,6 +100,13 @@ router.patch(
       `Borrower ${req.user.fullName} updated their profile (status reset to pending)`
     );
 
+    await notifyUser(req.user._id, {
+      title: "Profile updated",
+      message: "Your profile was updated and sent back for verification.",
+      type: "info",
+      link: "/profile"
+    });
+
     res.json(profile);
   })
 );
@@ -125,6 +140,15 @@ router.patch(
       profile._id,
       `${req.user.fullName} marked borrower profile as ${verificationStatus}`
     );
+
+    await notifyUser(profile.userId, {
+      title: verificationStatus === "verified" ? "Profile verified" : "Profile rejected",
+      message: verificationStatus === "verified"
+        ? "Your borrower profile has been verified. You can apply for eligible loan products."
+        : verificationNotes || "Your borrower profile was rejected. Please update and resubmit your information.",
+      type: verificationStatus === "verified" ? "success" : "danger",
+      link: "/profile"
+    });
 
     res.json(profile);
   })

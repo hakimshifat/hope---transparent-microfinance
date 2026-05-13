@@ -5,6 +5,7 @@ const OverdueCase = require("../models/OverdueCase");
 const User = require("../models/User");
 const asyncHandler = require("../utils/asyncHandler");
 const writeAudit = require("../utils/audit");
+const { notifyUser } = require("../utils/notify");
 const { protect, authorize } = require("../middleware/auth");
 
 const router = express.Router();
@@ -64,6 +65,20 @@ router.post(
       `Assigned overdue case to ${officer.fullName}`
     );
 
+    await notifyUser(assignedOfficerId, {
+      title: "New overdue case assigned",
+      message: `A ${priority} priority case was assigned to you.`,
+      type: priority === "urgent" ? "danger" : "warning",
+      link: "/field/cases"
+    });
+
+    await notifyUser(borrowerId, {
+      title: "Overdue follow-up opened",
+      message: "A field officer has been assigned to follow up on your overdue installment.",
+      type: "warning",
+      link: "/borrower"
+    });
+
     res.status(201).json(await casePopulate(OverdueCase.findById(overdueCase._id)));
   })
 );
@@ -114,6 +129,15 @@ router.patch(
     if (notes !== undefined) overdueCase.notes = notes;
     overdueCase.resolvedAt = caseStatus === "resolved" ? new Date() : undefined;
     await overdueCase.save();
+
+    if (caseStatus === "resolved") {
+      await notifyUser(overdueCase.borrowerId, {
+        title: "Overdue case resolved",
+        message: "Your overdue follow-up case has been marked as resolved.",
+        type: "success",
+        link: "/ledger"
+      });
+    }
 
     res.json(await casePopulate(OverdueCase.findById(overdueCase._id)));
   })

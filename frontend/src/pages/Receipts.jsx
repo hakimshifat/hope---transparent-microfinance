@@ -1,4 +1,4 @@
-import { Printer } from "lucide-react";
+import { Download, Printer } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api, { getErrorMessage } from "../api/client";
@@ -43,7 +43,10 @@ export default function Receipts() {
                 <h2 className="text-lg font-bold text-white group-hover:text-primary-300 transition-colors">{receipt.receiptNumber}</h2>
                 <p className="mt-1 text-sm text-slate-400">{date(receipt.paymentDate)}</p>
               </div>
-              <Printer className="h-5 w-5 text-slate-500 group-hover:text-primary-400 transition-colors" />
+              <div className="flex items-center gap-2 text-slate-500 group-hover:text-primary-400 transition-colors">
+                <Download className="h-4 w-4" />
+                <Printer className="h-5 w-5" />
+              </div>
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-xl border border-white/5 bg-white/5 p-3">

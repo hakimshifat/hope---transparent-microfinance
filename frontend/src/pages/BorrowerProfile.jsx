@@ -1,4 +1,4 @@
-import { Save } from "lucide-react";
+import { FileImage, Save, UploadCloud, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import api, { getErrorMessage } from "../api/client";
 import StatusBadge from "../components/StatusBadge";
@@ -37,6 +37,23 @@ export default function BorrowerProfile() {
     } catch (err) { setError(getErrorMessage(err)); }
   }
 
+  function handleDocumentUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setError("");
+    if (!file.type.startsWith("image/")) {
+      setError("Please upload an image file for the NID document.");
+      return;
+    }
+    if (file.size > 900 * 1024) {
+      setError("Document image must be under 900 KB for this MVP upload.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setForm((current) => ({ ...current, nidImageUrl: reader.result }));
+    reader.readAsDataURL(file);
+  }
+
   if (loading) return <div className="glass-panel rounded-2xl p-8 text-center text-slate-400 animate-scale-in">Loading profile...</div>;
 
   return (
@@ -61,7 +78,6 @@ export default function BorrowerProfile() {
             ["occupation", "Occupation", "text", true, false],
             ["monthlyIncome", "Monthly income (৳)", "number", true, false],
             ["nidNumber", "NID number", "text", true, false],
-            ["nidImageUrl", "NID image URL", "text", false, false],
             ["nomineeName", "Nominee name", "text", false, false],
             ["nomineePhone", "Nominee phone", "tel", false, false]
           ].map(([name, label, type, required, full]) => (
@@ -77,6 +93,45 @@ export default function BorrowerProfile() {
               />
             </label>
           ))}
+
+          <div className="md:col-span-2 rounded-2xl border border-white/10 bg-surfaceHighlight/30 p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-sm font-bold text-white">
+                  <FileImage className="h-4 w-4 text-primary-400" />
+                  NID Document Upload
+                </div>
+                <p className="mt-1 text-sm text-slate-400">Upload a clear NID image for supervisor review. JPG or PNG under 900 KB is recommended.</p>
+              </div>
+              <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-primary-500/30 bg-primary-500/10 px-4 py-3 text-sm font-bold text-primary-300 transition-all hover:bg-primary-500/20">
+                <UploadCloud className="h-4 w-4" />
+                Choose document
+                <input type="file" accept="image/*" className="sr-only" onChange={handleDocumentUpload} />
+              </label>
+            </div>
+
+            {form.nidImageUrl ? (
+              <div className="mt-5 grid gap-4 lg:grid-cols-[220px_1fr]">
+                <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                  <img src={form.nidImageUrl} alt="Uploaded NID preview" className="h-36 w-full object-cover" />
+                </div>
+                <div className="flex flex-col justify-center gap-3">
+                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-300">
+                    Document attached for verification.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, nidImageUrl: "" })}
+                    className="inline-flex w-fit items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-slate-300 hover:bg-white/10"
+                  >
+                    <X className="h-4 w-4" />
+                    Remove document
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+
           <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 px-4 py-3.5 text-sm font-bold text-white shadow-glow hover:-translate-y-0.5 hover:shadow-lg transition-all md:col-span-2">
             <Save className="h-4 w-4" />
             Save profile

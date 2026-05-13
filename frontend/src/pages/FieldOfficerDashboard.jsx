@@ -1,5 +1,5 @@
-import { AlertTriangle, CalendarPlus, CheckCircle2, ClipboardCheck, UserRoundCheck, History } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AlertTriangle, CalendarPlus, CheckCircle2, ClipboardCheck, History, Mail, Phone, Search, UserRoundCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import api, { getErrorMessage } from "../api/client";
 import EmptyState from "../components/EmptyState";
 import StatCard from "../components/StatCard";
@@ -10,6 +10,7 @@ export default function FieldOfficerDashboard() {
   const [cases, setCases] = useState([]);
   const [selected, setSelected] = useState(null);
   const [logs, setLogs] = useState([]);
+  const [filters, setFilters] = useState({ query: "", status: "open", priority: "all" });
   const [form, setForm] = useState({
     visitDate: new Date().toISOString().slice(0, 10),
     visitOutcome: "",
@@ -70,6 +71,19 @@ export default function FieldOfficerDashboard() {
 
   const urgent = cases.filter((item) => item.priority === "urgent").length;
   const unresolved = cases.filter((item) => item.caseStatus !== "resolved").length;
+  const filteredCases = useMemo(() => {
+    const q = filters.query.trim().toLowerCase();
+    return cases.filter((item) => {
+      const matchesQuery = !q || [item.borrowerId?.fullName, item.borrowerId?.phone, item.borrowerId?.email]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(q));
+      const matchesStatus =
+        filters.status === "all" ||
+        (filters.status === "open" ? item.caseStatus !== "resolved" : item.caseStatus === filters.status);
+      const matchesPriority = filters.priority === "all" || item.priority === filters.priority;
+      return matchesQuery && matchesStatus && matchesPriority;
+    });
+  }, [cases, filters]);
 
   const inputCls = "w-full rounded-2xl border border-white/10 bg-surfaceHighlight/40 px-5 py-3.5 text-slate-200 placeholder-slate-500 outline-none transition-all duration-300 focus:border-primary-500 focus:bg-white/5 focus:ring-4 focus:ring-primary-500/10 hover:border-white/20";
   const btnPrimary = "rounded-2xl bg-gradient-to-r from-primary-600 to-primary-500 px-6 py-3.5 text-sm font-bold text-white shadow-glow hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300";
@@ -108,11 +122,40 @@ export default function FieldOfficerDashboard() {
           
           {/* Inbox-Style Master List */}
           <section className="glass-panel rounded-3xl overflow-hidden flex flex-col">
-            <div className="p-5 border-b border-white/10 bg-surfaceHighlight/30 flex justify-between items-center shrink-0">
-              <h2 className="font-bold text-white text-lg">Inbox ({cases.length})</h2>
+            <div className="p-5 border-b border-white/10 bg-surfaceHighlight/30 shrink-0">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-bold text-white text-lg">Inbox ({filteredCases.length})</h2>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-slate-400">{cases.length} total</span>
+              </div>
+              <div className="mt-4 grid gap-3">
+                <label className="relative">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                  <input
+                    className="w-full rounded-2xl border border-white/10 bg-black/20 py-3 pl-11 pr-4 text-sm text-slate-200 placeholder-slate-500 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                    placeholder="Search borrower or phone"
+                    value={filters.query}
+                    onChange={(e) => setFilters({ ...filters, query: e.target.value })}
+                  />
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <select className={inputCls} value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}>
+                    <option value="open" className="bg-surfaceHighlight">Open cases</option>
+                    <option value="all" className="bg-surfaceHighlight">All statuses</option>
+                    <option value="assigned" className="bg-surfaceHighlight">Assigned</option>
+                    <option value="visited" className="bg-surfaceHighlight">Visited</option>
+                    <option value="follow_up_required" className="bg-surfaceHighlight">Follow-up</option>
+                    <option value="resolved" className="bg-surfaceHighlight">Resolved</option>
+                  </select>
+                  <select className={inputCls} value={filters.priority} onChange={(e) => setFilters({ ...filters, priority: e.target.value })}>
+                    <option value="all" className="bg-surfaceHighlight">All priority</option>
+                    <option value="urgent" className="bg-surfaceHighlight">Urgent</option>
+                    <option value="normal" className="bg-surfaceHighlight">Normal</option>
+                  </select>
+                </div>
+              </div>
             </div>
             <div className="overflow-y-auto flex-1 p-3 space-y-2 custom-scrollbar">
-              {cases.map((item) => {
+              {filteredCases.map((item) => {
                 const isSelected = selected?._id === item._id;
                 return (
                   <button
@@ -137,9 +180,18 @@ export default function FieldOfficerDashboard() {
                         </span>
                       )}
                     </div>
+                    <div className="mt-3 flex items-center justify-between rounded-xl border border-white/5 bg-black/10 px-3 py-2">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Outstanding</span>
+                      <span className="text-sm font-extrabold text-white">{currency((item.installmentId?.amountDue || 0) - (item.installmentId?.amountPaid || 0))}</span>
+                    </div>
                   </button>
                 );
               })}
+              {!filteredCases.length ? (
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-8 text-center text-sm text-slate-500">
+                  No cases match the current filters.
+                </div>
+              ) : null}
             </div>
           </section>
 
@@ -156,10 +208,25 @@ export default function FieldOfficerDashboard() {
                     <h2 className="text-3xl font-extrabold text-white tracking-tight">{selected.borrowerId?.fullName}</h2>
                     <p className="mt-1 text-slate-400 font-mono text-sm tracking-widest">{selected.borrowerId?.phone}</p>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
+                  <div className="flex flex-wrap items-start gap-2 sm:flex-col sm:items-end">
                     <StatusBadge value={selected.caseStatus} />
                     <StatusBadge value={selected.priority} />
                   </div>
+                </div>
+
+                <div className="mb-6 flex flex-wrap gap-3 relative z-10">
+                  {selected.borrowerId?.phone ? (
+                    <a href={`tel:${selected.borrowerId.phone}`} className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm font-bold text-emerald-300 hover:bg-emerald-500/20">
+                      <Phone className="h-4 w-4" />
+                      Call borrower
+                    </a>
+                  ) : null}
+                  {selected.borrowerId?.email ? (
+                    <a href={`mailto:${selected.borrowerId.email}`} className="inline-flex items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2.5 text-sm font-bold text-blue-300 hover:bg-blue-500/20">
+                      <Mail className="h-4 w-4" />
+                      Email
+                    </a>
+                  ) : null}
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-3 relative z-10">
@@ -169,7 +236,7 @@ export default function FieldOfficerDashboard() {
                   </div>
                   <div className="rounded-2xl border border-primary-500/20 bg-primary-500/10 p-4 backdrop-blur-md shadow-glow">
                     <div className="text-xs text-primary-400 font-bold uppercase tracking-widest mb-1">Installment Due</div>
-                    <div className="font-extrabold text-white text-xl">{currency(selected.installmentId?.amountDue)}</div>
+                    <div className="font-extrabold text-white text-xl">{currency((selected.installmentId?.amountDue || 0) - (selected.installmentId?.amountPaid || 0))}</div>
                   </div>
                   <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4 backdrop-blur-md">
                     <div className="text-xs text-red-400 font-bold uppercase tracking-widest mb-1">Due Date</div>

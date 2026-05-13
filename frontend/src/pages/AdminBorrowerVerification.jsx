@@ -150,7 +150,7 @@ export default function BorrowerVerification() {
       </div>
 
       {/* Main Split Layout */}
-      <div className="flex gap-5 opacity-0 animate-fade-in-up" style={{ animationDelay: "200ms" }}>
+      <div className="flex flex-col gap-5 lg:flex-row opacity-0 animate-fade-in-up" style={{ animationDelay: "200ms" }}>
 
         {/* Left: Profile List */}
         <div className={`flex flex-col gap-2 ${selected ? "w-full lg:w-80 xl:w-96 shrink-0" : "w-full"}`}>
@@ -230,9 +230,17 @@ export default function BorrowerVerification() {
               <div>
                 <h3 className="text-xs uppercase tracking-widest text-slate-500 font-bold mb-3">NID Document</h3>
                 {selected.nidImageUrl ? (
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-4 flex items-center gap-3">
-                    <FileText className="h-6 w-6 text-primary-400 shrink-0" />
-                    <span className="text-sm text-slate-200 font-mono break-all">{selected.nidImageUrl}</span>
+                  <div className="grid gap-4 rounded-xl border border-white/10 bg-white/5 p-4 md:grid-cols-[180px_1fr]">
+                    <div className="overflow-hidden rounded-xl border border-white/10 bg-black/20">
+                      <img src={selected.nidImageUrl} alt="Borrower uploaded NID" className="h-32 w-full object-cover" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-6 w-6 text-primary-400 shrink-0" />
+                      <div>
+                        <div className="text-sm font-bold text-white">Document uploaded</div>
+                        <div className="mt-1 text-xs text-slate-400">Review the image before approving the borrower profile.</div>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="rounded-xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-sm text-slate-500">

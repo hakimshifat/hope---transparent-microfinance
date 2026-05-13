@@ -17,6 +17,7 @@ const caseRoutes = require("./routes/case.routes");
 const visitLogRoutes = require("./routes/visitLog.routes");
 const auditLogRoutes = require("./routes/auditLog.routes");
 const statsRoutes = require("./routes/stats.routes");
+const notificationRoutes = require("./routes/notification.routes");
 const { notFound, errorHandler } = require("./middleware/errorHandler");
 
 const app = express();
@@ -44,6 +45,7 @@ app.use("/api/cases", caseRoutes);
 app.use("/api/visit-logs", visitLogRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
 app.use("/api/stats", statsRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

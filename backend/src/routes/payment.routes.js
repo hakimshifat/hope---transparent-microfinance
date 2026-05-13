@@ -5,8 +5,10 @@ const Payment = require("../models/Payment");
 const Receipt = require("../models/Receipt");
 const asyncHandler = require("../utils/asyncHandler");
 const writeAudit = require("../utils/audit");
+const { notifyUser, notifyUsers } = require("../utils/notify");
 const { roundMoney } = require("../utils/loanCalculator");
 const { protect, authorize } = require("../middleware/auth");
+const User = require("../models/User");
 
 const router = express.Router();
 
@@ -59,6 +61,14 @@ router.post(
       payment._id,
       `Borrower submitted mock payment of ${amount} via ${paymentMethod} (TxID: ${transactionId})`
     );
+
+    const reviewers = await User.find({ role: { $in: ["admin", "supervisor"] }, status: "active" }).select("_id");
+    await notifyUsers(reviewers.map((user) => user._id), {
+      title: "Payment awaiting review",
+      message: `${req.user.fullName} submitted ${amount} via ${paymentMethod}.`,
+      type: "warning",
+      link: "/dashboard?tab=payments"
+    });
 
     res.status(201).json(payment);
   })
@@ -152,6 +162,13 @@ router.patch(
       `Approved payment ${payment.transactionId} and generated receipt ${receipt.receiptNumber}`
     );
 
+    await notifyUser(payment.borrowerId, {
+      title: "Payment approved",
+      message: `Your payment ${payment.transactionId} was approved and receipt ${receipt.receiptNumber} is ready.`,
+      type: "success",
+      link: `/receipts/${receipt._id}`
+    });
+
     res.json({ payment, receipt });
   })
 );
@@ -181,6 +198,13 @@ router.patch(
       payment._id,
       `Rejected payment ${payment.transactionId}: ${payment.rejectionReason}`
     );
+
+    await notifyUser(payment.borrowerId, {
+      title: "Payment rejected",
+      message: payment.rejectionReason,
+      type: "danger",
+      link: "/borrower"
+    });
 
     res.json(payment);
   })
