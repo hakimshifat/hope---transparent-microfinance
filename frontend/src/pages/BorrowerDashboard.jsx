@@ -67,7 +67,7 @@ export default function BorrowerDashboard() {
     setError("");
     try {
       await api.post("/payments", {
-        installmentId: paying._id,
+        installmentId: paying.id,
         amount: paying.amountDue - paying.amountPaid,
         paymentMethod: paymentForm.paymentMethod,
         transactionId: paymentForm.transactionId
@@ -225,7 +225,7 @@ export default function BorrowerDashboard() {
               <div className="space-y-3">
                 {unpaidInstallments.slice(0, 3).map((item) => (
                   <button
-                    key={item._id}
+                    key={item.id}
                     onClick={() => setPaying(item)}
                     className="flex w-full items-center justify-between gap-4 rounded-2xl border border-white/10 bg-surfaceHighlight/30 p-5 text-left transition-all hover:border-primary-500/50 hover:bg-primary-500/10 group shadow-sm hover:shadow-glow"
                   >
@@ -268,7 +268,7 @@ export default function BorrowerDashboard() {
             </thead>
             <tbody className="divide-y divide-white/5 bg-surfaceHighlight/10">
               {data.installments.map((item) => (
-                <tr key={item._id} className="hover:bg-white/5 transition-colors group">
+                <tr key={item.id} className="hover:bg-white/5 transition-colors group">
                   <td className="px-8 py-5 font-bold text-slate-200 group-hover:text-white transition-colors">#{item.installmentNumber}</td>
                   <td className="px-8 py-5 text-slate-400 font-medium">{date(item.dueDate)}</td>
                   <td className="px-8 py-5 text-slate-200 font-bold">{currency(item.amountDue)}</td>

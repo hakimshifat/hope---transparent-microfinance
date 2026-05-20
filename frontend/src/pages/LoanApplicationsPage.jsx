@@ -43,7 +43,7 @@ export default function LoanApplicationsPage() {
   useEffect(() => {
     setRejectionReason(selected?.rejectionReason || "");
     setMessage(""); setError("");
-  }, [selected?._id]);
+  }, [selected?.id]);
 
   const counts = useMemo(() => ({
     total: applications.length,
@@ -57,8 +57,8 @@ export default function LoanApplicationsPage() {
     return applications.filter((a) => {
       const matchStatus = statusFilter === "all" || a.applicationStatus === statusFilter;
       const matchQuery = !term || [
-        a.borrowerId?.fullName, a.borrowerId?.phone,
-        a.loanProductId?.productName, a.purpose
+        a.borrower?.fullName, a.borrower?.phone,
+        a.loanProduct?.productName, a.purpose
       ].filter(Boolean).some((v) => String(v).toLowerCase().includes(term));
       return matchStatus && matchQuery;
     });
@@ -69,8 +69,8 @@ export default function LoanApplicationsPage() {
     setActionLoading(true); setMessage(""); setError("");
     try {
       const endpoint = status === "approved"
-        ? `/loan-applications/${selected._id}/approve`
-        : `/loan-applications/${selected._id}/reject`;
+        ? `/loan-applications/${selected.id}/approve`
+        : `/loan-applications/${selected.id}/reject`;
       const payload = status === "rejected"
         ? { rejectionReason: rejectionReason || "Application rejected" }
         : {};
@@ -149,10 +149,10 @@ export default function LoanApplicationsPage() {
           {filtered.length === 0 ? (
             <EmptyState title="No applications match" message="Try changing the filter or search term." />
           ) : filtered.map((app) => {
-            const isActive = selected?._id === app._id;
+            const isActive = selected?.id === app.id;
             return (
               <button
-                key={app._id}
+                key={app.id}
                 onClick={() => setSelected(app)}
                 className={`w-full text-left rounded-2xl border border-white/10 border-l-4 ${borderColor[app.applicationStatus] || "border-l-white/10"} p-4 transition-all duration-300 ${
                   isActive ? "bg-primary-500/10 border-primary-500/40 ring-1 ring-primary-500/20" : "bg-surfaceHighlight/30 hover:bg-white/5"
@@ -160,8 +160,8 @@ export default function LoanApplicationsPage() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="font-bold text-white truncate">{app.borrowerId?.fullName}</div>
-                    <div className="text-xs text-slate-400 mt-0.5 truncate">{app.loanProductId?.productName}</div>
+                    <div className="font-bold text-white truncate">{app.borrower?.fullName}</div>
+                    <div className="text-xs text-slate-400 mt-0.5 truncate">{app.loanProduct?.productName}</div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <StatusBadge value={app.applicationStatus} />
@@ -184,10 +184,10 @@ export default function LoanApplicationsPage() {
               {/* Header */}
               <div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <h2 className="text-2xl font-extrabold text-white">{selected.borrowerId?.fullName}</h2>
+                  <h2 className="text-2xl font-extrabold text-white">{selected.borrower?.fullName}</h2>
                   <StatusBadge value={selected.applicationStatus} />
                 </div>
-                <p className="mt-1 text-sm text-slate-400">{selected.borrowerId?.phone}</p>
+                <p className="mt-1 text-sm text-slate-400">{selected.borrower?.phone}</p>
                 {selected.reviewedBy && (
                   <p className="mt-1 text-xs text-slate-500">
                     Reviewed by <span className="text-slate-300 font-medium">{selected.reviewedBy?.fullName || "System"}</span> on {date(selected.reviewedAt)}
@@ -202,13 +202,13 @@ export default function LoanApplicationsPage() {
               <div>
                 <h3 className="text-xs uppercase tracking-widest text-slate-500 font-bold mb-3">Loan Product</h3>
                 <div className="rounded-xl border border-primary-500/20 bg-primary-500/5 p-4">
-                  <div className="font-bold text-white text-lg">{selected.loanProductId?.productName}</div>
-                  <p className="mt-1 text-sm text-slate-400">{selected.loanProductId?.description}</p>
+                  <div className="font-bold text-white text-lg">{selected.loanProduct?.productName}</div>
+                  <p className="mt-1 text-sm text-slate-400">{selected.loanProduct?.description}</p>
                   <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
-                    <div><span className="text-slate-500">Range: </span><span className="text-slate-200 font-semibold">{currency(selected.loanProductId?.minAmount)} – {currency(selected.loanProductId?.maxAmount)}</span></div>
-                    <div><span className="text-slate-500">Service charge: </span><span className="text-slate-200 font-semibold">{selected.loanProductId?.serviceChargeRate}%</span></div>
-                    <div><span className="text-slate-500">Duration: </span><span className="text-slate-200 font-semibold">{selected.loanProductId?.durationMonths} months</span></div>
-                    <div><span className="text-slate-500">Installments: </span><span className="text-slate-200 font-semibold">{selected.loanProductId?.numberOfInstallments} × {selected.loanProductId?.installmentFrequency}</span></div>
+                    <div><span className="text-slate-500">Range: </span><span className="text-slate-200 font-semibold">{currency(selected.loanProduct?.minAmount)} – {currency(selected.loanProduct?.maxAmount)}</span></div>
+                    <div><span className="text-slate-500">Service charge: </span><span className="text-slate-200 font-semibold">{selected.loanProduct?.serviceChargeRate}%</span></div>
+                    <div><span className="text-slate-500">Duration: </span><span className="text-slate-200 font-semibold">{selected.loanProduct?.durationMonths} months</span></div>
+                    <div><span className="text-slate-500">Installments: </span><span className="text-slate-200 font-semibold">{selected.loanProduct?.numberOfInstallments} × {selected.loanProduct?.installmentFrequency}</span></div>
                   </div>
                 </div>
               </div>

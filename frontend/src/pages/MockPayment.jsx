@@ -27,7 +27,7 @@ export default function MockPayment() {
     setPayments(paymentRes.data);
 
     const firstUnpaid = installmentRes.data.find((item) => item.status !== "paid" && item.amountPaid < item.amountDue);
-    if (firstUnpaid) setSelectedId((current) => current || firstUnpaid._id);
+    if (firstUnpaid) setSelectedId((current) => current || firstUnpaid.id);
   }
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export default function MockPayment() {
     () => installments.filter((item) => item.status !== "paid" && item.amountPaid < item.amountDue),
     [installments]
   );
-  const selected = payableInstallments.find((item) => item._id === selectedId);
+  const selected = payableInstallments.find((item) => item.id === selectedId);
   const pendingCount = payments.filter((payment) => payment.paymentStatus === "pending").length;
   const approvedTotal = payments
     .filter((payment) => payment.paymentStatus === "approved")
@@ -58,7 +58,7 @@ export default function MockPayment() {
 
     try {
       await api.post("/payments", {
-        installmentId: selected._id,
+        installmentId: selected.id,
         amount: selected.amountDue - selected.amountPaid,
         paymentMethod: form.paymentMethod,
         transactionId: form.transactionId
@@ -103,11 +103,11 @@ export default function MockPayment() {
             ) : (
               payableInstallments.map((item) => {
                 const remaining = item.amountDue - item.amountPaid;
-                const active = item._id === selectedId;
+                const active = item.id === selectedId;
                 return (
                   <button
-                    key={item._id}
-                    onClick={() => setSelectedId(item._id)}
+                    key={item.id}
+                    onClick={() => setSelectedId(item.id)}
                     className={`w-full rounded-xl border p-4 text-left transition-all ${
                       active
                         ? "border-primary-500/70 bg-primary-500/10 shadow-glow"
@@ -202,7 +202,7 @@ export default function MockPayment() {
             </thead>
             <tbody className="divide-y divide-white/5">
               {payments.map((payment) => (
-                <tr key={payment._id} className="hover:bg-white/5 transition-colors">
+                <tr key={payment.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-6 py-4 font-mono text-slate-200">{payment.transactionId}</td>
                   <td className="px-6 py-4 text-slate-300">{payment.paymentMethod}</td>
                   <td className="px-6 py-4 font-bold text-white">{currency(payment.amount)}</td>

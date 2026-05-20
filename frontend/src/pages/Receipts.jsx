@@ -33,8 +33,8 @@ export default function Receipts() {
       <div className="grid gap-4 md:grid-cols-2">
         {receipts.map((receipt, i) => (
           <Link
-            to={`/receipts/${receipt._id}`}
-            key={receipt._id}
+            to={`/receipts/${receipt.id}`}
+            key={receipt.id}
             className="glass-panel rounded-2xl p-5 transition-all hover:border-primary-500/40 hover:shadow-glow group opacity-0 animate-scale-in"
             style={{ animationDelay: `${i * 80}ms` }}
           >

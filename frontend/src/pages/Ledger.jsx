@@ -68,7 +68,7 @@ export default function Ledger() {
             </thead>
             <tbody className="divide-y divide-white/5">
               {ledger.installments.map((item) => (
-                <tr key={item._id} className="hover:bg-white/5 transition-colors">
+                <tr key={item.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-6 py-4 font-semibold text-slate-200">#{item.installmentNumber}</td>
                   <td className="px-6 py-4 text-slate-300">{date(item.dueDate)}</td>
                   <td className="px-6 py-4 text-slate-200">{currency(item.amountDue)}</td>
@@ -97,7 +97,7 @@ export default function Ledger() {
             </thead>
             <tbody className="divide-y divide-white/5">
               {ledger.paymentHistory.map((payment) => (
-                <tr key={payment._id} className="hover:bg-white/5 transition-colors">
+                <tr key={payment.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-6 py-4 font-mono text-slate-300 text-xs">{payment.transactionId}</td>
                   <td className="px-6 py-4 text-slate-300">{payment.paymentMethod}</td>
                   <td className="px-6 py-4 font-bold text-white">{currency(payment.amount)}</td>

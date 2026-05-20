@@ -55,15 +55,15 @@ export default function BorrowerVerification() {
   useEffect(() => {
     if (!selected) { setLoans([]); return; }
     api.get("/loans")
-      .then(({ data }) => setLoans(data.filter((l) => l.borrowerId === selected.userId?._id || l.borrowerId === selected.userId)))
+      .then(({ data }) => setLoans(data.filter((l) => l.borrowerId === selected.userId?.id || l.borrowerId === selected.userId)))
       .catch(() => setLoans([]));
-  }, [selected?._id]);
+  }, [selected?.id]);
 
   // Sync note field when selected changes
   useEffect(() => {
     setNotes(selected?.verificationNotes || "");
     setMessage(""); setError("");
-  }, [selected?._id]);
+  }, [selected?.id]);
 
   const counts = useMemo(() => ({
     total: profiles.length,
@@ -86,7 +86,7 @@ export default function BorrowerVerification() {
     if (!selected) return;
     setActionLoading(true); setMessage(""); setError("");
     try {
-      const updated = await api.patch(`/borrowers/${selected._id}/verify`, {
+      const updated = await api.patch(`/borrowers/${selected.id}/verify`, {
         verificationStatus: status,
         verificationNotes: notes || (status === "verified" ? "Verified" : "Rejected")
       });
@@ -155,7 +155,7 @@ export default function BorrowerVerification() {
         {/* Left: Profile List */}
         <div className={`flex flex-col gap-2 ${selected ? "w-full lg:w-80 xl:w-96 shrink-0" : "w-full"}`}>
           {filtered.length === 0 ? <EmptyState title="No profiles match" /> : filtered.map((profile) => {
-            const isActive = selected?._id === profile._id;
+            const isActive = selected?.id === profile.id;
             const statusColor = {
               pending: "border-l-amber-500",
               verified: "border-l-emerald-500",
@@ -164,7 +164,7 @@ export default function BorrowerVerification() {
 
             return (
               <button
-                key={profile._id}
+                key={profile.id}
                 onClick={() => setSelected(profile)}
                 className={`w-full text-left rounded-2xl border border-white/10 border-l-4 ${statusColor} p-4 transition-all duration-300 ${
                   isActive
@@ -255,7 +255,7 @@ export default function BorrowerVerification() {
                   <h3 className="text-xs uppercase tracking-widest text-slate-500 font-bold mb-3">Loan History</h3>
                   <div className="space-y-2">
                     {loans.map((loan) => (
-                      <div key={loan._id} className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-surfaceHighlight/40 px-4 py-3">
+                      <div key={loan.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-surfaceHighlight/40 px-4 py-3">
                         <div>
                           <div className="text-sm font-bold text-white">{currency(loan.principalAmount)}</div>
                           <div className="text-xs text-slate-400 mt-0.5">Disbursed {date(loan.disbursedAt || loan.createdAt)}</div>

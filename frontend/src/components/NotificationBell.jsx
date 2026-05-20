@@ -35,7 +35,7 @@ export default function NotificationBell({ compact = false }) {
 
   async function markRead(id) {
     await api.patch(`/notifications/${id}/read`);
-    setNotifications((items) => items.map((item) => item._id === id ? { ...item, readAt: item.readAt || new Date().toISOString() } : item));
+    setNotifications((items) => items.map((item) => item.id === id ? { ...item, readAt: item.readAt || new Date().toISOString() } : item));
     setOpen(false);
   }
 
@@ -88,11 +88,11 @@ export default function NotificationBell({ compact = false }) {
               );
 
               return item.link ? (
-                <Link key={item._id} to={item.link} onClick={() => markRead(item._id)} className="mb-2 block">
+                <Link key={item.id} to={item.link} onClick={() => markRead(item.id)} className="mb-2 block">
                   {content}
                 </Link>
               ) : (
-                <button key={item._id} onClick={() => markRead(item._id)} className="mb-2 block w-full text-left">
+                <button key={item.id} onClick={() => markRead(item.id)} className="mb-2 block w-full text-left">
                   {content}
                 </button>
               );

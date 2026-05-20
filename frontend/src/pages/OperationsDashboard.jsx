@@ -66,7 +66,7 @@ export default function OperationsDashboard({ mode }) {
     ];
     const [users, profiles, applications, loans, pendingPayments, cases, products, auditLogs, visitLogs] = await Promise.all(requests);
     const schedules = await Promise.all(
-      loans.data.filter((l) => l.loanStatus === "active").map((loan) => api.get(`/installments/loan/${loan._id}`).then(({ data }) => ({ loan, installments: data })))
+      loans.data.filter((l) => l.loanStatus === "active").map((loan) => api.get(`/installments/loan/${loan.id}`).then(({ data }) => ({ loan, installments: data })))
     );
     const overdueInstallments = schedules.flatMap(({ loan, installments }) =>
       installments.filter((i) => i.status === "overdue" || (new Date(i.dueDate) < new Date() && i.amountPaid < i.amountDue)).map((i) => ({ loan, installment: i }))
@@ -107,9 +107,9 @@ export default function OperationsDashboard({ mode }) {
 
   async function submitAssignment(event) {
     event.preventDefault();
-    const selected = state.overdueInstallments.find((item) => `${item.loan._id}:${item.installment._id}` === assignment.overdueKey);
+    const selected = state.overdueInstallments.find((item) => `${item.loan.id}:${item.installment.id}` === assignment.overdueKey);
     if (!selected) { setError("Select an overdue installment"); return; }
-    await runAction(() => api.post("/cases/assign", { borrowerId: selected.loan.borrowerId?._id || selected.loan.borrowerId, loanId: selected.loan._id, installmentId: selected.installment._id, assignedOfficerId: assignment.officerId, priority: assignment.priority, notes: assignment.notes }), "Case assigned.");
+    await runAction(() => api.post("/cases/assign", { borrowerId: selected.loan.borrower?.id || selected.loan.borrowerId, loanId: selected.loan.id, installmentId: selected.installment.id, assignedOfficerId: assignment.officerId, priority: assignment.priority, notes: assignment.notes }), "Case assigned.");
     setAssignment({ overdueKey: "", officerId: "", priority: "normal", notes: "" });
   }
 
@@ -166,15 +166,15 @@ export default function OperationsDashboard({ mode }) {
               {state.profiles.length === 0 ? (
                 <tr><td colSpan={5} className="px-6 py-10 text-center text-slate-400"><EmptyState title="No borrower profiles pending" /></td></tr>
               ) : state.profiles.map((profile) => (
-                <tr key={profile._id} className="hover:bg-white/5 transition-colors group">
+                <tr key={profile.id} className="hover:bg-white/5 transition-colors group">
                   <td className="px-6 py-5 font-bold text-slate-200 group-hover:text-white">{profile.fullName}</td>
                   <td className="px-6 py-5 text-slate-400 font-mono">{profile.phone}</td>
                   <td className="px-6 py-5 font-medium text-primary-400">{currency(profile.monthlyIncome)}</td>
                   <td className="px-6 py-5"><StatusBadge value={profile.verificationStatus} /></td>
                   <td className="px-6 py-5">
                     <div className="flex gap-3">
-                      <button onClick={() => runAction(() => api.patch(`/borrowers/${profile._id}/verify`, { verificationStatus: "verified" }), "Borrower verified.")} className={btnSuccess}>Approve</button>
-                      <button onClick={() => runAction(() => api.patch(`/borrowers/${profile._id}/verify`, { verificationStatus: "rejected", verificationNotes: rejectReason("Verification rejected") }), "Borrower rejected.")} className={btnDanger}>Reject</button>
+                      <button onClick={() => runAction(() => api.patch(`/borrowers/${profile.id}/verify`, { verificationStatus: "verified" }), "Borrower verified.")} className={btnSuccess}>Approve</button>
+                      <button onClick={() => runAction(() => api.patch(`/borrowers/${profile.id}/verify`, { verificationStatus: "rejected", verificationNotes: rejectReason("Verification rejected") }), "Borrower rejected.")} className={btnDanger}>Reject</button>
                     </div>
                   </td>
                 </tr>
@@ -188,17 +188,17 @@ export default function OperationsDashboard({ mode }) {
               {state.applications.length === 0 ? (
                 <tr><td colSpan={6} className="px-6 py-10 text-center"><EmptyState title="No pending applications" /></td></tr>
               ) : state.applications.map((app) => (
-                <tr key={app._id} className="hover:bg-white/5 transition-colors group">
-                  <td className="px-6 py-5 font-bold text-slate-200 group-hover:text-white">{app.borrowerId?.fullName}</td>
-                  <td className="px-6 py-5 text-slate-300 font-medium">{app.loanProductId?.productName}</td>
+                <tr key={app.id} className="hover:bg-white/5 transition-colors group">
+                  <td className="px-6 py-5 font-bold text-slate-200 group-hover:text-white">{app.borrower?.fullName}</td>
+                  <td className="px-6 py-5 text-slate-300 font-medium">{app.loanProduct?.productName}</td>
                   <td className="px-6 py-5 font-extrabold text-white text-lg">{currency(app.requestedAmount)}</td>
                   <td className="px-6 py-5 max-w-xs text-slate-400 text-xs italic">"{app.purpose}"</td>
                   <td className="px-6 py-5"><StatusBadge value={app.applicationStatus} /></td>
                   <td className="px-6 py-5">
                     {app.applicationStatus === "pending" ? (
                       <div className="flex gap-3">
-                        <button onClick={() => runAction(() => api.patch(`/loan-applications/${app._id}/approve`), "Application approved.")} className={btnSuccess}>Approve Loan</button>
-                        <button onClick={() => runAction(() => api.patch(`/loan-applications/${app._id}/reject`, { rejectionReason: rejectReason("Application rejected") }), "Application rejected.")} className={btnDanger}>Deny</button>
+                        <button onClick={() => runAction(() => api.patch(`/loan-applications/${app.id}/approve`), "Application approved.")} className={btnSuccess}>Approve Loan</button>
+                        <button onClick={() => runAction(() => api.patch(`/loan-applications/${app.id}/reject`, { rejectionReason: rejectReason("Application rejected") }), "Application rejected.")} className={btnDanger}>Deny</button>
                       </div>
                     ) : <span className="text-xs text-slate-500 font-semibold uppercase">Reviewed</span>}
                   </td>
@@ -213,10 +213,10 @@ export default function OperationsDashboard({ mode }) {
               ? <EmptyState title="No pending payments" message="All payments have been reviewed." />
               : <div className="grid gap-6 xl:grid-cols-2">
                   {state.pendingPayments.map((payment) => (
-                    <div key={payment._id} className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-sm hover:shadow-glow transition-all duration-300">
+                    <div key={payment.id} className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-sm hover:shadow-glow transition-all duration-300">
                       <div className="flex items-start justify-between gap-3 border-b border-white/5 pb-4 mb-4">
                         <div>
-                          <div className="font-bold text-white text-lg">{payment.borrowerId?.fullName}</div>
+                          <div className="font-bold text-white text-lg">{payment.borrower?.fullName}</div>
                           <div className="text-xs text-slate-400 mt-1 font-mono tracking-wider">TXN: {payment.transactionId}</div>
                         </div>
                         <StatusBadge value={payment.paymentStatus} />
@@ -232,8 +232,8 @@ export default function OperationsDashboard({ mode }) {
                         </div>
                       </div>
                       <div className="flex gap-3">
-                        <button onClick={() => runAction(() => api.patch(`/payments/${payment._id}/approve`), "Payment approved.")} className={`flex-1 ${btnSuccess} py-3 text-sm`}>Approve Payment</button>
-                        <button onClick={() => runAction(() => api.patch(`/payments/${payment._id}/reject`, { rejectionReason: rejectReason("Payment rejected") }), "Payment rejected.")} className={`${btnDanger} py-3 text-sm flex-[0.5]`}>Reject</button>
+                        <button onClick={() => runAction(() => api.patch(`/payments/${payment.id}/approve`), "Payment approved.")} className={`flex-1 ${btnSuccess} py-3 text-sm`}>Approve Payment</button>
+                        <button onClick={() => runAction(() => api.patch(`/payments/${payment.id}/reject`, { rejectionReason: rejectReason("Payment rejected") }), "Payment rejected.")} className={`${btnDanger} py-3 text-sm flex-[0.5]`}>Reject</button>
                       </div>
                     </div>
                   ))}
@@ -249,14 +249,14 @@ export default function OperationsDashboard({ mode }) {
                   <select className={inputCls} value={assignment.overdueKey} onChange={(e) => setAssignment({ ...assignment, overdueKey: e.target.value })} required>
                     <option value="" className="bg-surfaceHighlight">Select overdue installment...</option>
                     {state.overdueInstallments.map(({ loan, installment }) => (
-                      <option key={installment._id} value={`${loan._id}:${installment._id}`} className="bg-surfaceHighlight">
-                        {loan.borrowerId?.fullName} — #{installment.installmentNumber} — {currency(installment.amountDue - installment.amountPaid)}
+                      <option key={installment.id} value={`${loan.id}:${installment.id}`} className="bg-surfaceHighlight">
+                        {loan.borrower?.fullName} — #{installment.installmentNumber} — {currency(installment.amountDue - installment.amountPaid)}
                       </option>
                     ))}
                   </select>
                   <select className={inputCls} value={assignment.officerId} onChange={(e) => setAssignment({ ...assignment, officerId: e.target.value })} required>
                     <option value="" className="bg-surfaceHighlight">Assign to Field Officer...</option>
-                    {officers.map((o) => <option key={o._id} value={o._id} className="bg-surfaceHighlight">{o.fullName}</option>)}
+                    {officers.map((o) => <option key={o.id} value={o.id} className="bg-surfaceHighlight">{o.fullName}</option>)}
                   </select>
                   <select className={inputCls} value={assignment.priority} onChange={(e) => setAssignment({ ...assignment, priority: e.target.value })}>
                     <option value="normal" className="bg-surfaceHighlight">Normal Priority</option>
@@ -269,11 +269,11 @@ export default function OperationsDashboard({ mode }) {
 
               <div className="grid gap-4 xl:grid-cols-2">
                 {state.cases.length === 0 ? <EmptyState title="No active cases" /> : state.cases.slice(0, 10).map((item) => (
-                  <div key={item._id} className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm hover:border-white/20 transition-all">
+                  <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm hover:border-white/20 transition-all">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div>
-                        <div className="font-bold text-white text-lg">{item.borrowerId?.fullName}</div>
-                        <div className="text-sm text-slate-400 mt-1">Assigned to: <span className="font-medium text-slate-300">{item.assignedOfficerId?.fullName}</span></div>
+                        <div className="font-bold text-white text-lg">{item.borrower?.fullName}</div>
+                        <div className="text-sm text-slate-400 mt-1">Assigned to: <span className="font-medium text-slate-300">{item.assignedOfficer?.fullName}</span></div>
                       </div>
                       <StatusBadge value={item.caseStatus} />
                     </div>
@@ -304,16 +304,16 @@ export default function OperationsDashboard({ mode }) {
 
               <DarkTable heads={["Name", "Phone", "Role", "Status"]}>
                 {state.users.map((user) => (
-                  <tr key={user._id} className="hover:bg-white/5 transition-colors group">
+                  <tr key={user.id} className="hover:bg-white/5 transition-colors group">
                     <td className="px-6 py-5 font-bold text-slate-200 group-hover:text-white">{user.fullName}</td>
                     <td className="px-6 py-5 text-slate-400 font-mono">{user.phone}</td>
                     <td className="px-6 py-5">
-                      <select className="rounded-xl border border-white/10 bg-surfaceHighlight/50 px-4 py-2 text-sm text-slate-200 outline-none focus:border-primary-500 font-medium" value={user.role} onChange={(e) => runAction(() => api.patch(`/users/${user._id}/role`, { role: e.target.value }), "Role updated.")}>
+                      <select className="rounded-xl border border-white/10 bg-surfaceHighlight/50 px-4 py-2 text-sm text-slate-200 outline-none focus:border-primary-500 font-medium" value={user.role} onChange={(e) => runAction(() => api.patch(`/users/${user.id}/role`, { role: e.target.value }), "Role updated.")}>
                         {["borrower", "field_officer", "supervisor", "admin"].map((r) => <option key={r} value={r} className="bg-surfaceHighlight">{title(r)}</option>)}
                       </select>
                     </td>
                     <td className="px-6 py-5">
-                      <select className="rounded-xl border border-white/10 bg-surfaceHighlight/50 px-4 py-2 text-sm text-slate-200 outline-none focus:border-primary-500 font-medium" value={user.status} onChange={(e) => runAction(() => api.patch(`/users/${user._id}/status`, { status: e.target.value }), "Status updated.")}>
+                      <select className="rounded-xl border border-white/10 bg-surfaceHighlight/50 px-4 py-2 text-sm text-slate-200 outline-none focus:border-primary-500 font-medium" value={user.status} onChange={(e) => runAction(() => api.patch(`/users/${user.id}/status`, { status: e.target.value }), "Status updated.")}>
                         {["active", "inactive", "pending"].map((s) => <option key={s} className="bg-surfaceHighlight">{s}</option>)}
                       </select>
                     </td>
@@ -347,7 +347,7 @@ export default function OperationsDashboard({ mode }) {
 
               <div className="grid gap-6 xl:grid-cols-2">
                 {state.products.map((product) => (
-                  <div key={product._id} className="rounded-3xl border border-white/10 bg-white/5 p-6 flex flex-col justify-between">
+                  <div key={product.id} className="rounded-3xl border border-white/10 bg-white/5 p-6 flex flex-col justify-between">
                     <div>
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="font-extrabold text-white text-xl">{product.productName}</div>
@@ -357,8 +357,8 @@ export default function OperationsDashboard({ mode }) {
                       <p className="text-sm text-slate-400 line-clamp-2 mb-6">{product.description}</p>
                     </div>
                     <div className="flex gap-3 pt-4 border-t border-white/5">
-                      <button onClick={() => { setEditingProduct(product._id); setProductForm({ productName: product.productName, description: product.description, minAmount: product.minAmount, maxAmount: product.maxAmount, serviceChargeRate: product.serviceChargeRate, durationMonths: product.durationMonths, installmentFrequency: product.installmentFrequency, numberOfInstallments: product.numberOfInstallments, lateFeeAmount: product.lateFeeAmount, eligibilityNote: product.eligibilityNote || "", status: product.status }); }} className={`${btnSecondary} text-xs py-2.5 px-6 flex-1`}>Edit</button>
-                      <button onClick={() => runAction(() => api.patch(`/loan-products/${product._id}/status`, { status: product.status === "active" ? "inactive" : "active" }), "Status updated.")} className={`${btnSecondary} text-xs py-2.5 px-6 flex-1 hover:border-amber-500/50 hover:text-amber-400`}>{product.status === "active" ? "Disable" : "Enable"}</button>
+                      <button onClick={() => { setEditingProduct(product.id); setProductForm({ productName: product.productName, description: product.description, minAmount: product.minAmount, maxAmount: product.maxAmount, serviceChargeRate: product.serviceChargeRate, durationMonths: product.durationMonths, installmentFrequency: product.installmentFrequency, numberOfInstallments: product.numberOfInstallments, lateFeeAmount: product.lateFeeAmount, eligibilityNote: product.eligibilityNote || "", status: product.status }); }} className={`${btnSecondary} text-xs py-2.5 px-6 flex-1`}>Edit</button>
+                      <button onClick={() => runAction(() => api.patch(`/loan-products/${product.id}/status`, { status: product.status === "active" ? "inactive" : "active" }), "Status updated.")} className={`${btnSecondary} text-xs py-2.5 px-6 flex-1 hover:border-amber-500/50 hover:text-amber-400`}>{product.status === "active" ? "Disable" : "Enable"}</button>
                     </div>
                   </div>
                 ))}
@@ -370,15 +370,15 @@ export default function OperationsDashboard({ mode }) {
           {activeTab === "field_logs" && (
             <div className="space-y-4">
               {!state.visitLogs.length ? <EmptyState title="No visit logs yet" message="Field officers submit logs when they visit borrowers." /> : state.visitLogs.map((log) => (
-                <div key={log._id} className="rounded-3xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 transition-all">
+                <div key={log.id} className="rounded-3xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 transition-all">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4 border-b border-white/5 pb-4">
                     <div>
-                      <div className="font-bold text-white text-lg">{log.caseId?.borrowerId?.fullName}</div>
-                      <div className="text-sm text-slate-400 mt-1 tracking-widest font-mono">{log.caseId?.borrowerId?.phone}</div>
+                      <div className="font-bold text-white text-lg">{log.caseId?.borrower?.fullName}</div>
+                      <div className="text-sm text-slate-400 mt-1 tracking-widest font-mono">{log.caseId?.borrower?.phone}</div>
                     </div>
                     <div className="sm:text-right">
                       <div className="text-sm font-bold text-primary-400 bg-primary-500/10 px-3 py-1 rounded-full border border-primary-500/20 inline-block">{date(log.visitDate)}</div>
-                      <div className="text-xs text-slate-500 mt-2 font-medium uppercase tracking-wider">Officer: {log.officerId?.fullName}</div>
+                      <div className="text-xs text-slate-500 mt-2 font-medium uppercase tracking-wider">Officer: {log.officer?.fullName}</div>
                     </div>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2 mb-4">
@@ -406,7 +406,7 @@ export default function OperationsDashboard({ mode }) {
           {activeTab === "audit" && (
             <div className="relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-primary-500/50 before:via-white/10 before:to-transparent mt-4 mb-8">
               {!state.auditLogs.length ? <EmptyState title="No audit logs" /> : state.auditLogs.slice(0, 30).map((log) => (
-                <div key={log._id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active py-2">
+                <div key={log.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active py-2">
                   <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-primary-500/50 bg-surfaceHighlight shadow-glow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 transition-transform group-hover:scale-110 duration-300">
                     <ScrollText className="h-4 w-4 text-primary-400" />
                   </div>

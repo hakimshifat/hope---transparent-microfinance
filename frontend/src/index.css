@@ -4,65 +4,139 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ───────── Light palette (default) ───────── */
+:root {
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surfaceHighlight: #f1f5f9;
+  --color-text-base: #0f172a;
+  --color-text-muted: #64748b;
+  --color-text-inverted: #ffffff;
+  --color-border: #e2e8f0;
+  --shadow-glass-premium: 0 8px 32px 0 rgba(0, 0, 0, 0.06), 0 1px 0 0 rgba(0, 0, 0, 0.02);
+  color-scheme: light;
+}
+
+/* ───────── Dark palette ───────── */
+.dark {
+  --color-background: #0a0c10;
+  --color-surface: #12151c;
+  --color-surfaceHighlight: #1c212b;
+  --color-text-base: #e2e8f0;
+  --color-text-muted: #94a3b8;
+  --color-text-inverted: #0f172a;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --shadow-glass-premium: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 0 rgba(255, 255, 255, 0.02);
+  color-scheme: dark;
+}
+
 @layer base {
-  :root {
-    color-scheme: dark;
+  body {
+    margin: 0;
+    min-width: 320px;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    background: var(--color-background);
+    color: var(--color-text-base);
+    @apply font-sans transition-colors duration-300 selection:bg-primary-500/30;
   }
 
-  body {
-    margin: 0;
-    min-width: 320px;
-    @apply bg-background text-slate-200 font-sans selection:bg-primary-500/30 selection:text-primary-100;
-  }
-
-  /* Custom Scrollbar for a premium feel */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  ::-webkit-scrollbar-track {
-    @apply bg-surface;
-  }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-slate-700 rounded-full hover:bg-slate-500 transition-colors;
-  }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--color-surface); }
+  .dark ::-webkit-scrollbar-thumb { @apply bg-slate-700 rounded-full hover:bg-slate-500; }
+  ::-webkit-scrollbar-thumb { @apply bg-slate-300 rounded-full hover:bg-slate-400; }
 }
 
 @layer utilities {
   .glass-panel {
-    @apply bg-surface/70 backdrop-blur-xl border border-white/10 shadow-glass-premium relative overflow-hidden transition-all duration-500;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-glass-premium);
+    @apply relative overflow-hidden transition-all duration-500 backdrop-blur-xl;
   }
-  
+  .dark .glass-panel {
+    background: rgba(18, 21, 28, 0.7);
+  }
   .glass-panel::before {
     content: "";
-    @apply absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none opacity-50;
+    @apply absolute inset-0 pointer-events-none opacity-30;
+    background: linear-gradient(135deg, rgba(0,0,0,0.02), transparent);
   }
-  
-  .glass-panel-light {
-    @apply bg-white/5 backdrop-blur-lg border border-white/10 relative overflow-hidden transition-all duration-500;
+  .dark .glass-panel::before {
+    background: linear-gradient(135deg, rgba(255,255,255,0.05), transparent);
+    opacity: 0.5;
   }
 
-  .glass-panel-light::before {
-    content: "";
-    @apply absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none opacity-30;
+  .glass-panel-light {
+    border: 1px solid var(--color-border);
+    @apply backdrop-blur-lg relative overflow-hidden transition-all duration-500;
   }
+  .dark .glass-panel-light { @apply bg-white/5; }
+  .glass-panel-light { background: rgba(241, 245, 249, 0.6); }
 
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-400 via-accent-light to-primary-400 bg-[length:200%_auto] animate-shimmer;
   }
 
-  .hover-lift {
-    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-glow;
-  }
-
-  .hover-glow {
-    @apply transition-all duration-300 hover:shadow-glow hover:border-primary-500/50;
-  }
+  .hover-lift { @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-glow; }
+  .hover-glow { @apply transition-all duration-300 hover:shadow-glow hover:border-primary-500/50; }
 }
+
+/* ━━━ Light mode overrides ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   These remap dark-mode-only Tailwind utility classes to sensible light values
+   so that existing components work in both themes without any JSX changes.
+   Placed OUTSIDE @layer so they always beat Tailwind's generated utilities.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* Text */
+html:not(.dark) .text-white          { color: #0f172a !important; }
+html:not(.dark) .text-slate-200      { color: #334155 !important; }
+html:not(.dark) .text-slate-300      { color: #475569 !important; }
+html:not(.dark) .text-slate-400      { color: #64748b !important; }
+html:not(.dark) .text-slate-500      { color: #94a3b8 !important; }
+html:not(.dark) .hover\:text-white:hover { color: #0f172a !important; }
+html:not(.dark) .group-hover\:text-white:is(:where(.group):hover *) { color: #0f172a !important; }
+html:not(.dark) .group-hover\:text-primary-300:is(:where(.group):hover *) { color: #059669 !important; }
+
+/* Keep actual white for things that need it (badge icon in gradient bg) */
+html:not(.dark) .bg-gradient-to-br .text-white,
+html:not(.dark) .bg-gradient-to-r .text-white,
+html:not(.dark) [class*="from-primary"] > .text-white { color: #ffffff !important; }
+
+/* Borders */
+html:not(.dark) .border-white\/5,
+html:not(.dark) .border-white\/10,
+html:not(.dark) .border-white\/20 { border-color: #e2e8f0 !important; }
+html:not(.dark) .hover\:border-white\/10:hover,
+html:not(.dark) .hover\:border-white\/20:hover { border-color: #cbd5e1 !important; }
+html:not(.dark) .hover\:border-primary-500\/40:hover { border-color: rgba(16, 185, 129, 0.4) !important; }
+html:not(.dark) .divide-white\/10 > :not([hidden]) ~ :not([hidden]) { border-color: #e2e8f0 !important; }
+html:not(.dark) .border-y { border-color: #e2e8f0 !important; }
+html:not(.dark) .border-b.border-white\/5 { border-bottom-color: #e2e8f0 !important; }
+
+/* Backgrounds */
+html:not(.dark) .bg-white\/5           { background-color: rgba(15, 23, 42, 0.02) !important; }
+html:not(.dark) .bg-white\/10          { background-color: rgba(15, 23, 42, 0.04) !important; }
+html:not(.dark) .hover\:bg-white\/5:hover  { background-color: rgba(15, 23, 42, 0.03) !important; }
+html:not(.dark) .hover\:bg-white\/10:hover { background-color: rgba(15, 23, 42, 0.06) !important; }
+html:not(.dark) .bg-black\/10          { background-color: rgba(15, 23, 42, 0.03) !important; }
+html:not(.dark) .bg-black\/20          { background-color: rgba(15, 23, 42, 0.05) !important; }
+html:not(.dark) .bg-surfaceHighlight\/30,
+html:not(.dark) .bg-surfaceHighlight\/40,
+html:not(.dark) .bg-surfaceHighlight\/50 { background-color: #f1f5f9 !important; }
+html:not(.dark) .bg-surfaceHighlight    { background-color: #f1f5f9 !important; }
+
+/* Header background */
+html:not(.dark) .bg-background\/60     { background-color: rgba(248, 250, 252, 0.88) !important; }
+
+/* Blob / decorative backgrounds */
+html:not(.dark) .bg-primary-500\/10    { background-color: rgba(16, 185, 129, 0.05) !important; }
+html:not(.dark) .bg-accent-light\/10   { background-color: rgba(56, 189, 248, 0.05) !important; }
+
+/* Select option text readability */
+html:not(.dark) option.bg-surfaceHighlight { background: #f1f5f9; color: #0f172a; }
 
 button,
 input,
@@ -73,20 +147,10 @@ textarea {
 }
 
 @media print {
-  .no-print {
-    display: none !important;
-  }
-  body {
-    background: white;
-    color: black;
-  }
-  body * {
-    visibility: hidden;
-  }
-  .receipt-print,
-  .receipt-print * {
-    visibility: visible;
-  }
+  .no-print { display: none !important; }
+  body { background: white; color: black; }
+  body * { visibility: hidden; }
+  .receipt-print, .receipt-print * { visibility: visible; }
   .receipt-print {
     position: absolute !important;
     inset: 0 auto auto 0;
@@ -97,39 +161,19 @@ textarea {
     border: 0 !important;
     box-shadow: none !important;
   }
-  .receipt-print::before {
-    display: none !important;
-  }
+  .receipt-print::before { display: none !important; }
   .receipt-print h1,
   .receipt-print .text-white,
-  .receipt-print .text-slate-300 {
-    color: #111827 !important;
-  }
+  .receipt-print .text-slate-300 { color: #111827 !important; }
   .receipt-print .text-slate-400,
-  .receipt-print .text-slate-500 {
-    color: #4b5563 !important;
-  }
-  .receipt-print .text-primary-400 {
-    color: #047857 !important;
-  }
+  .receipt-print .text-slate-500 { color: #4b5563 !important; }
+  .receipt-print .text-primary-400 { color: #047857 !important; }
   .receipt-print .border-white\/10,
-  .receipt-print .border-y {
-    border-color: #d1d5db !important;
-  }
+  .receipt-print .border-y { border-color: #d1d5db !important; }
 }
 
 @media (max-width: 640px) {
-  .glass-panel,
-  .glass-panel-light {
-    border-radius: 1rem;
-  }
-
-  table {
-    font-size: 0.8125rem;
-  }
-
-  th,
-  td {
-    white-space: nowrap;
-  }
+  .glass-panel, .glass-panel-light { border-radius: 1rem; }
+  table { font-size: 0.8125rem; }
+  th, td { white-space: nowrap; }
 }

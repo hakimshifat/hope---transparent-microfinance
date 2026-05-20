@@ -30,15 +30,35 @@ async function startServer() {
     await prisma.$connect();
     console.log("Connected to PostgreSQL via Prisma");
   } catch (error) {
-    console.error("Failed to connect to database:", error);
+    console.error("Failed to connect to database:", error.message);
     process.exit(1);
   }
+
   await ensureDefaultAdmin();
 
   const port = process.env.PORT || 5000;
-  app.listen(port, () => {
-    console.log(`Hope API running on port ${port}`);
+  const server = app.listen(port, () => {
+    console.log(`Hope API running on port ${port} [${process.env.NODE_ENV || "development"}]`);
   });
+
+  // ─── Graceful shutdown ──────────────────────────────────────────────────
+  async function shutdown(signal) {
+    console.log(`\n${signal} received — shutting down gracefully…`);
+    server.close(async () => {
+      await prisma.$disconnect();
+      console.log("Database disconnected. Goodbye.");
+      process.exit(0);
+    });
+
+    // Force exit after 10 s if connections don't drain
+    setTimeout(() => {
+      console.error("Forced shutdown after timeout");
+      process.exit(1);
+    }, 10_000);
+  }
+
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
 }
 
 startServer().catch(async (error) => {

@@ -11,10 +11,12 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Moon,
   PackagePlus,
   ReceiptText,
   ScrollText,
   ShieldCheck,
+  Sun,
   UserCircle,
   UserPlus,
   Users,
@@ -24,6 +26,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { title } from "../utils/format";
+import { useTheme } from "../context/ThemeContext";
 import NotificationBell from "./NotificationBell";
 
 function publicLinks() {
@@ -79,6 +82,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const { dark, toggle: toggleTheme } = useTheme();
   const links = user ? roleLinks(user.role) : publicLinks();
   const currentTab = new URLSearchParams(location.search).get("tab");
 
@@ -145,6 +149,14 @@ export default function Layout() {
                 </div>
                 <NotificationBell />
                 <button
+                  onClick={toggleTheme}
+                  className="rounded-full border border-white/10 bg-white/5 p-2.5 text-slate-300 hover:bg-white/10 hover:text-white transition-all duration-300 hover:rotate-180"
+                  aria-label="Toggle theme"
+                  title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                  {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
+                <button
                   onClick={handleLogout}
                   className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2 text-sm font-semibold text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
                 >
@@ -154,6 +166,13 @@ export default function Layout() {
               </>
             ) : (
               <>
+                <button
+                  onClick={toggleTheme}
+                  className="rounded-full border border-white/10 bg-white/5 p-2.5 text-slate-300 hover:bg-white/10 hover:text-white transition-all duration-300 hover:rotate-180"
+                  aria-label="Toggle theme"
+                >
+                  {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
                 <NavLink className="rounded-full px-5 py-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors" to="/login">
                   Login
                 </NavLink>

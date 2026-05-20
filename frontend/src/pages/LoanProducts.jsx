@@ -47,7 +47,7 @@ export default function LoanProducts() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         {products.map((product, i) => (
-          <div key={product._id} className="glass-panel rounded-2xl p-6 opacity-0 animate-scale-in" style={{ animationDelay: `${i * 100}ms` }}>
+          <div key={product.id} className="glass-panel rounded-2xl p-6 opacity-0 animate-scale-in" style={{ animationDelay: `${i * 100}ms` }}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-xl font-bold text-white">{product.productName}</h2>
@@ -72,8 +72,8 @@ export default function LoanProducts() {
 
             {product.eligibilityNote ? <p className="mt-4 text-sm font-medium text-slate-400 italic">{product.eligibilityNote}</p> : null}
 
-            {selected === product._id ? (
-              <form onSubmit={(e) => { e.preventDefault(); apply(product._id); }} className="mt-5 grid gap-3">
+            {selected === product.id ? (
+              <form onSubmit={(e) => { e.preventDefault(); apply(product.id); }} className="mt-5 grid gap-3">
                 <input type="number" min={product.minAmount} max={product.maxAmount} className={inputCls} placeholder={`Amount (${currency(product.minAmount)} – ${currency(product.maxAmount)})`} value={form.requestedAmount} onChange={(e) => setForm({ ...form, requestedAmount: e.target.value })} required />
                 <textarea className={`${inputCls} min-h-24`} placeholder="Loan purpose" value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} required />
                 <div className="flex gap-3">
@@ -84,7 +84,7 @@ export default function LoanProducts() {
                 </div>
               </form>
             ) : (
-              <button onClick={() => setSelected(product._id)} className="mt-5 w-full rounded-xl border border-primary-500/30 bg-primary-500/10 px-4 py-3 text-sm font-bold text-primary-300 hover:bg-primary-500/20 hover:border-primary-500/50 transition-all">
+              <button onClick={() => setSelected(product.id)} className="mt-5 w-full rounded-xl border border-primary-500/30 bg-primary-500/10 px-4 py-3 text-sm font-bold text-primary-300 hover:bg-primary-500/20 hover:border-primary-500/50 transition-all">
                 Apply for this loan
               </button>
             )}

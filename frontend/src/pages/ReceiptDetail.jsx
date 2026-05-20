@@ -45,8 +45,8 @@ export default function ReceiptDetail() {
     <div class="grid">
       <div><div class="label">Receipt number</div><div class="value">${receipt.receiptNumber}</div></div>
       <div><div class="label">Payment date</div><div class="value">${date(receipt.paymentDate)}</div></div>
-      <div><div class="label">Borrower</div><div class="value">${receipt.borrowerId?.fullName || ""}</div></div>
-      <div><div class="label">Borrower phone</div><div class="value">${receipt.borrowerId?.phone || ""}</div></div>
+      <div><div class="label">Borrower</div><div class="value">${receipt.borrower?.fullName || ""}</div></div>
+      <div><div class="label">Borrower phone</div><div class="value">${receipt.borrower?.phone || ""}</div></div>
       <div><div class="label">Payment method</div><div class="value">${receipt.paymentMethod}</div></div>
       <div><div class="label">Transaction ID</div><div class="value">${receipt.transactionId}</div></div>
     </div>
@@ -99,8 +99,8 @@ export default function ReceiptDetail() {
           {[
             ["Receipt number", receipt.receiptNumber],
             ["Payment date", date(receipt.paymentDate)],
-            ["Borrower", receipt.borrowerId?.fullName],
-            ["Borrower phone", receipt.borrowerId?.phone],
+            ["Borrower", receipt.borrower?.fullName],
+            ["Borrower phone", receipt.borrower?.phone],
             ["Payment method", receipt.paymentMethod],
             ["Transaction ID", receipt.transactionId]
           ].map(([label, value]) => (
@@ -119,7 +119,7 @@ export default function ReceiptDetail() {
           </div>
           <div className="text-right">
             <div className="text-xs text-slate-500">Installment</div>
-            <div className="mt-1 text-sm font-bold text-slate-300">#{receipt.installmentId?.installmentNumber}</div>
+            <div className="mt-1 text-sm font-bold text-slate-300">#{receipt.installment?.installmentNumber}</div>
           </div>
         </div>
 

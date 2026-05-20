@@ -42,39 +42,37 @@ export default function FieldOfficerDashboard() {
   }, []);
 
   useEffect(() => {
-    loadLogs(selected?._id).catch((err) => setError(getErrorMessage(err)));
-  }, [selected?._id]);
+    loadLogs(selected?.id).catch((err) => setError(getErrorMessage(err)));
+  }, [selected?.id]);
 
   async function submitVisitLog(event) {
     event.preventDefault();
     setError(""); setMessage("");
     try {
-      await api.post("/visit-logs", { ...form, caseId: selected._id, nextFollowUpDate: form.nextFollowUpDate || undefined });
+      await api.post("/visit-logs", { ...form, caseId: selected.id, nextFollowUpDate: form.nextFollowUpDate || undefined });
       setMessage("Visit log submitted successfully.");
       setForm({ visitDate: new Date().toISOString().slice(0, 10), visitOutcome: "", borrowerResponse: "", nextFollowUpDate: "", notes: "", caseStatus: "visited" });
       await loadCases();
-      await loadLogs(selected._id);
+      await loadLogs(selected.id);
     } catch (err) { setError(getErrorMessage(err)); }
   }
 
   async function updateStatus(caseStatus) {
     setError(""); setMessage("");
     try {
-      const { data } = await api.patch(`/cases/${selected._id}/status`, { caseStatus, notes: selected.notes });
+      const { data } = await api.patch(`/cases/${selected.id}/status`, { caseStatus, notes: selected.notes });
       setSelected(data);
       await loadCases();
       setMessage(`Case status updated to ${caseStatus.replaceAll('_', ' ')}.`);
     } catch (err) { setError(getErrorMessage(err)); }
   }
 
-  if (loading) return <div className="glass-panel rounded-2xl p-8 text-center text-slate-400 animate-scale-in">Loading assignments...</div>;
-
   const urgent = cases.filter((item) => item.priority === "urgent").length;
   const unresolved = cases.filter((item) => item.caseStatus !== "resolved").length;
   const filteredCases = useMemo(() => {
     const q = filters.query.trim().toLowerCase();
     return cases.filter((item) => {
-      const matchesQuery = !q || [item.borrowerId?.fullName, item.borrowerId?.phone, item.borrowerId?.email]
+      const matchesQuery = !q || [item.borrower?.fullName, item.borrower?.phone, item.borrower?.email]
         .filter(Boolean)
         .some((value) => value.toLowerCase().includes(q));
       const matchesStatus =
@@ -87,6 +85,8 @@ export default function FieldOfficerDashboard() {
 
   const inputCls = "w-full rounded-2xl border border-white/10 bg-surfaceHighlight/40 px-5 py-3.5 text-slate-200 placeholder-slate-500 outline-none transition-all duration-300 focus:border-primary-500 focus:bg-white/5 focus:ring-4 focus:ring-primary-500/10 hover:border-white/20";
   const btnPrimary = "rounded-2xl bg-gradient-to-r from-primary-600 to-primary-500 px-6 py-3.5 text-sm font-bold text-white shadow-glow hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300";
+
+  if (loading) return <div className="glass-panel rounded-2xl p-8 text-center text-slate-400 animate-scale-in">Loading assignments...</div>;
 
   return (
     <div className="space-y-8 pb-10 flex flex-col h-full min-h-[calc(100vh-140px)]">
@@ -156,10 +156,10 @@ export default function FieldOfficerDashboard() {
             </div>
             <div className="overflow-y-auto flex-1 p-3 space-y-2 custom-scrollbar">
               {filteredCases.map((item) => {
-                const isSelected = selected?._id === item._id;
+                const isSelected = selected?.id === item.id;
                 return (
                   <button
-                    key={item._id}
+                    key={item.id}
                     onClick={() => setSelected(item)}
                     className={`w-full text-left transition-all duration-300 rounded-2xl p-4 border ${
                       isSelected
@@ -168,21 +168,21 @@ export default function FieldOfficerDashboard() {
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <h3 className={`font-bold truncate ${isSelected ? 'text-white' : 'text-slate-200'}`}>{item.borrowerId?.fullName}</h3>
+                      <h3 className={`font-bold truncate ${isSelected ? 'text-white' : 'text-slate-200'}`}>{item.borrower?.fullName}</h3>
                       {item.priority === 'urgent' && <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] shrink-0 mt-1.5"></div>}
                     </div>
-                    <div className="text-xs text-slate-400 font-mono mb-3">{item.borrowerId?.phone}</div>
+                    <div className="text-xs text-slate-400 font-mono mb-3">{item.borrower?.phone}</div>
                     <div className="flex flex-wrap gap-2 items-center">
                       <StatusBadge value={item.caseStatus} />
-                      {item.installmentId && (
+                      {item.installment && (
                         <span className="text-[10px] uppercase tracking-wider font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded flex items-center gap-1 border border-red-500/20">
-                          <AlertTriangle className="h-3 w-3" /> {daysPastDue(item.installmentId.dueDate)}d overdue
+                          <AlertTriangle className="h-3 w-3" /> {daysPastDue(item.installment.dueDate)}d overdue
                         </span>
                       )}
                     </div>
                     <div className="mt-3 flex items-center justify-between rounded-xl border border-white/5 bg-black/10 px-3 py-2">
                       <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Outstanding</span>
-                      <span className="text-sm font-extrabold text-white">{currency((item.installmentId?.amountDue || 0) - (item.installmentId?.amountPaid || 0))}</span>
+                      <span className="text-sm font-extrabold text-white">{currency((item.installment?.amountDue || 0) - (item.installment?.amountPaid || 0))}</span>
                     </div>
                   </button>
                 );
@@ -205,8 +205,8 @@ export default function FieldOfficerDashboard() {
                 
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between relative z-10 mb-6">
                   <div>
-                    <h2 className="text-3xl font-extrabold text-white tracking-tight">{selected.borrowerId?.fullName}</h2>
-                    <p className="mt-1 text-slate-400 font-mono text-sm tracking-widest">{selected.borrowerId?.phone}</p>
+                    <h2 className="text-3xl font-extrabold text-white tracking-tight">{selected.borrower?.fullName}</h2>
+                    <p className="mt-1 text-slate-400 font-mono text-sm tracking-widest">{selected.borrower?.phone}</p>
                   </div>
                   <div className="flex flex-wrap items-start gap-2 sm:flex-col sm:items-end">
                     <StatusBadge value={selected.caseStatus} />
@@ -215,14 +215,14 @@ export default function FieldOfficerDashboard() {
                 </div>
 
                 <div className="mb-6 flex flex-wrap gap-3 relative z-10">
-                  {selected.borrowerId?.phone ? (
-                    <a href={`tel:${selected.borrowerId.phone}`} className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm font-bold text-emerald-300 hover:bg-emerald-500/20">
+                  {selected.borrower?.phone ? (
+                    <a href={`tel:${selected.borrower?.phone}`} className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm font-bold text-emerald-300 hover:bg-emerald-500/20">
                       <Phone className="h-4 w-4" />
                       Call borrower
                     </a>
                   ) : null}
-                  {selected.borrowerId?.email ? (
-                    <a href={`mailto:${selected.borrowerId.email}`} className="inline-flex items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2.5 text-sm font-bold text-blue-300 hover:bg-blue-500/20">
+                  {selected.borrower?.email ? (
+                    <a href={`mailto:${selected.borrower?.email}`} className="inline-flex items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2.5 text-sm font-bold text-blue-300 hover:bg-blue-500/20">
                       <Mail className="h-4 w-4" />
                       Email
                     </a>
@@ -232,15 +232,15 @@ export default function FieldOfficerDashboard() {
                 <div className="grid gap-4 md:grid-cols-3 relative z-10">
                   <div className="rounded-2xl border border-white/5 bg-white/5 p-4 backdrop-blur-md">
                     <div className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">Loan Principal</div>
-                    <div className="font-extrabold text-white text-xl">{currency(selected.loanId?.principalAmount)}</div>
+                    <div className="font-extrabold text-white text-xl">{currency(selected.loan?.principalAmount)}</div>
                   </div>
                   <div className="rounded-2xl border border-primary-500/20 bg-primary-500/10 p-4 backdrop-blur-md shadow-glow">
                     <div className="text-xs text-primary-400 font-bold uppercase tracking-widest mb-1">Installment Due</div>
-                    <div className="font-extrabold text-white text-xl">{currency((selected.installmentId?.amountDue || 0) - (selected.installmentId?.amountPaid || 0))}</div>
+                    <div className="font-extrabold text-white text-xl">{currency((selected.installment?.amountDue || 0) - (selected.installment?.amountPaid || 0))}</div>
                   </div>
                   <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-4 backdrop-blur-md">
                     <div className="text-xs text-red-400 font-bold uppercase tracking-widest mb-1">Due Date</div>
-                    <div className="font-extrabold text-white text-xl">{date(selected.installmentId?.dueDate)}</div>
+                    <div className="font-extrabold text-white text-xl">{date(selected.installment?.dueDate)}</div>
                   </div>
                 </div>
               </div>
@@ -324,7 +324,7 @@ export default function FieldOfficerDashboard() {
                   
                   <div className="relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-primary-500/50 before:via-white/10 before:to-transparent space-y-6">
                     {logs.map((log) => (
-                      <div key={log._id} className="relative flex items-start group">
+                      <div key={log.id} className="relative flex items-start group">
                         <div className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-primary-500/50 bg-surfaceHighlight shadow-glow shrink-0 z-10 mt-1 transition-transform group-hover:scale-110 duration-300">
                           <ClipboardCheck className="h-4 w-4 text-primary-400" />
                         </div>

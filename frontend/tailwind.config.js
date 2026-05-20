@@ -1,15 +1,16 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,jsx}"],
+  darkMode: "class",
   theme: {
     extend: {
       fontFamily: {
         sans: ["Outfit", "Inter", "ui-sans-serif", "system-ui", "sans-serif"]
       },
       colors: {
-        background: "#0a0c10",
-        surface: "#12151c",
-        surfaceHighlight: "#1c212b",
+        background: "var(--color-background)",
+        surface: "var(--color-surface)",
+        surfaceHighlight: "var(--color-surfaceHighlight)",
         primary: {
           50: '#ecfdf5',
           100: '#d1fae5',
@@ -28,12 +29,24 @@ export default {
           dark: "#0369a1"
         }
       },
+      textColor: {
+        skin: {
+          base: "var(--color-text-base)",
+          muted: "var(--color-text-muted)",
+          inverted: "var(--color-text-inverted)",
+        }
+      },
+      borderColor: {
+        skin: {
+          base: "var(--color-border)",
+        }
+      },
       boxShadow: {
         soft: "0 12px 30px rgba(15, 23, 42, 0.08)",
         glow: "0 0 20px rgba(16, 185, 129, 0.4)",
         "glow-accent": "0 0 20px rgba(56, 189, 248, 0.4)",
         glass: "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
-        "glass-premium": "0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 0 rgba(255, 255, 255, 0.02)",
+        "glass-premium": "var(--shadow-glass-premium)",
         "glass-glow": "0 0 40px rgba(16, 185, 129, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.1)"
       },
       animation: {
