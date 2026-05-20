@@ -1,6 +1,5 @@
 const express = require("express");
-const Loan = require("../models/Loan");
-const OverdueCase = require("../models/OverdueCase");
+const prisma = require("../config/prisma");
 const asyncHandler = require("../utils/asyncHandler");
 const { protect, authorize } = require("../middleware/auth");
 
@@ -8,9 +7,11 @@ const router = express.Router();
 
 async function canAccessLoan(user, loan) {
   if (["admin", "supervisor"].includes(user.role)) return true;
-  if (user.role === "borrower" && String(loan.borrowerId._id || loan.borrowerId) === String(user._id)) return true;
+  if (user.role === "borrower" && String(loan.borrowerId) === String(user.id)) return true;
   if (user.role === "field_officer") {
-    const assignedCase = await OverdueCase.findOne({ loanId: loan._id, assignedOfficerId: user._id });
+    const assignedCase = await prisma.overdueCase.findFirst({
+      where: { loanId: loan.id, assignedOfficerId: user.id }
+    });
     return Boolean(assignedCase);
   }
   return false;
@@ -21,10 +22,14 @@ router.get(
   protect,
   authorize("borrower"),
   asyncHandler(async (req, res) => {
-    const loans = await Loan.find({ borrowerId: req.user._id })
-      .populate("loanProductId")
-      .populate("approvedBy", "fullName role")
-      .sort({ createdAt: -1 });
+    const loans = await prisma.loan.findMany({
+      where: { borrowerId: req.user.id },
+      include: {
+        loanProduct: true,
+        approvedBy: { select: { fullName: true, role: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
     res.json(loans);
   })
 );
@@ -34,11 +39,14 @@ router.get(
   protect,
   authorize("admin", "supervisor"),
   asyncHandler(async (req, res) => {
-    const loans = await Loan.find()
-      .populate("borrowerId", "fullName phone")
-      .populate("loanProductId")
-      .populate("approvedBy", "fullName role")
-      .sort({ createdAt: -1 });
+    const loans = await prisma.loan.findMany({
+      include: {
+        borrower: { select: { fullName: true, phone: true } },
+        loanProduct: true,
+        approvedBy: { select: { fullName: true, role: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
     res.json(loans);
   })
 );
@@ -47,10 +55,14 @@ router.get(
   "/:id",
   protect,
   asyncHandler(async (req, res) => {
-    const loan = await Loan.findById(req.params.id)
-      .populate("borrowerId", "fullName phone email")
-      .populate("loanProductId")
-      .populate("approvedBy", "fullName role");
+    const loan = await prisma.loan.findUnique({
+      where: { id: req.params.id },
+      include: {
+        borrower: { select: { fullName: true, phone: true, email: true } },
+        loanProduct: true,
+        approvedBy: { select: { fullName: true, role: true } }
+      }
+    });
 
     if (!loan) return res.status(404).json({ message: "Loan not found" });
     if (!(await canAccessLoan(req.user, loan))) {

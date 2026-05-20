@@ -1,5 +1,5 @@
 const express = require("express");
-const BorrowerProfile = require("../models/BorrowerProfile");
+const prisma = require("../config/prisma");
 const asyncHandler = require("../utils/asyncHandler");
 const writeAudit = require("../utils/audit");
 const { notifyUser } = require("../utils/notify");
@@ -26,10 +26,13 @@ router.get(
   protect,
   authorize("admin", "supervisor"),
   asyncHandler(async (req, res) => {
-    const profiles = await BorrowerProfile.find()
-      .populate("userId", "fullName phone email status")
-      .populate("verifiedBy", "fullName role")
-      .sort({ createdAt: -1 });
+    const profiles = await prisma.borrowerProfile.findMany({
+      include: {
+        user: { select: { fullName: true, phone: true, email: true, status: true } },
+        verifiedBy: { select: { fullName: true, role: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
     res.json(profiles);
   })
 );
@@ -39,7 +42,7 @@ router.post(
   protect,
   authorize("borrower"),
   asyncHandler(async (req, res) => {
-    const existing = await BorrowerProfile.findOne({ userId: req.user._id });
+    const existing = await prisma.borrowerProfile.findUnique({ where: { userId: req.user.id } });
     if (existing) return res.status(409).json({ message: "Profile already exists" });
 
     const payload = profilePayload(req.body, req.user);
@@ -47,17 +50,19 @@ router.post(
       return res.status(400).json({ message: "Address, occupation, monthlyIncome and nidNumber are required" });
     }
 
-    const profile = await BorrowerProfile.create({ ...payload, userId: req.user._id });
+    const profile = await prisma.borrowerProfile.create({
+      data: { ...payload, userId: req.user.id }
+    });
 
     await writeAudit(
       req.user,
       "borrower_profile_created",
       "BorrowerProfile",
-      profile._id,
+      profile.id,
       `Borrower ${req.user.fullName} created their profile`
     );
 
-    await notifyUser(req.user._id, {
+    await notifyUser(req.user.id, {
       title: "Profile submitted",
       message: "Your borrower profile was submitted for verification.",
       type: "info",
@@ -73,7 +78,7 @@ router.get(
   protect,
   authorize("borrower"),
   asyncHandler(async (req, res) => {
-    const profile = await BorrowerProfile.findOne({ userId: req.user._id });
+    const profile = await prisma.borrowerProfile.findUnique({ where: { userId: req.user.id } });
     if (!profile) return res.status(404).json({ message: "Profile not found" });
     res.json(profile);
   })
@@ -84,30 +89,32 @@ router.patch(
   protect,
   authorize("borrower"),
   asyncHandler(async (req, res) => {
-    const profile = await BorrowerProfile.findOneAndUpdate(
-      { userId: req.user._id },
-      { ...profilePayload(req.body, req.user), verificationStatus: "pending" },
-      { new: true, runValidators: true }
-    );
+    try {
+      const profile = await prisma.borrowerProfile.update({
+        where: { userId: req.user.id },
+        data: { ...profilePayload(req.body, req.user), verificationStatus: "pending" }
+      });
 
-    if (!profile) return res.status(404).json({ message: "Profile not found" });
+      await writeAudit(
+        req.user,
+        "borrower_profile_updated",
+        "BorrowerProfile",
+        profile.id,
+        `Borrower ${req.user.fullName} updated their profile (status reset to pending)`
+      );
 
-    await writeAudit(
-      req.user,
-      "borrower_profile_updated",
-      "BorrowerProfile",
-      profile._id,
-      `Borrower ${req.user.fullName} updated their profile (status reset to pending)`
-    );
+      await notifyUser(req.user.id, {
+        title: "Profile updated",
+        message: "Your profile was updated and sent back for verification.",
+        type: "info",
+        link: "/profile"
+      });
 
-    await notifyUser(req.user._id, {
-      title: "Profile updated",
-      message: "Your profile was updated and sent back for verification.",
-      type: "info",
-      link: "/profile"
-    });
-
-    res.json(profile);
+      res.json(profile);
+    } catch (error) {
+      if (error.code === 'P2025') return res.status(404).json({ message: "Profile not found" });
+      throw error;
+    }
   })
 );
 
@@ -121,23 +128,28 @@ router.patch(
       return res.status(400).json({ message: "verificationStatus must be verified or rejected" });
     }
 
-    const profile =
-      (await BorrowerProfile.findById(req.params.id)) ||
-      (await BorrowerProfile.findOne({ userId: req.params.id }));
+    let profile = await prisma.borrowerProfile.findUnique({ where: { id: req.params.id } });
+    if (!profile) {
+      profile = await prisma.borrowerProfile.findUnique({ where: { userId: req.params.id } });
+    }
 
     if (!profile) return res.status(404).json({ message: "Borrower profile not found" });
 
-    profile.verificationStatus = verificationStatus;
-    profile.verificationNotes = verificationNotes;
-    profile.verifiedBy = req.user._id;
-    profile.verifiedAt = new Date();
-    await profile.save();
+    profile = await prisma.borrowerProfile.update({
+      where: { id: profile.id },
+      data: {
+        verificationStatus,
+        verificationNotes,
+        verifiedById: req.user.id,
+        verifiedAt: new Date()
+      }
+    });
 
     await writeAudit(
       req.user,
       `borrower_${verificationStatus}`,
       "BorrowerProfile",
-      profile._id,
+      profile.id,
       `${req.user.fullName} marked borrower profile as ${verificationStatus}`
     );
 

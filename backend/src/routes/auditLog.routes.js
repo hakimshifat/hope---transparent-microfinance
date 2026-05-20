@@ -1,5 +1,5 @@
 const express = require("express");
-const AuditLog = require("../models/AuditLog");
+const prisma = require("../config/prisma");
 const asyncHandler = require("../utils/asyncHandler");
 const { protect, authorize } = require("../middleware/auth");
 
@@ -10,10 +10,13 @@ router.get(
   protect,
   authorize("admin", "supervisor"),
   asyncHandler(async (req, res) => {
-    const logs = await AuditLog.find()
-      .populate("actorId", "fullName phone role")
-      .sort({ createdAt: -1 })
-      .limit(200);
+    const logs = await prisma.auditLog.findMany({
+      include: {
+        actor: { select: { fullName: true, phone: true, role: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200
+    });
     res.json(logs);
   })
 );

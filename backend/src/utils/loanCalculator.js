@@ -23,7 +23,7 @@ function buildLoanData({ borrowerId, product, principalAmount, approvedBy, disbu
 
   return {
     borrowerId,
-    loanProductId: product._id,
+    loanProductId: product.id || product._id,
     principalAmount,
     serviceChargeAmount,
     totalPayableAmount,
@@ -35,7 +35,7 @@ function buildLoanData({ borrowerId, product, principalAmount, approvedBy, disbu
     startDate,
     endDate,
     loanStatus: "active",
-    approvedBy
+    approvedById: approvedBy
   };
 }
 
@@ -52,7 +52,7 @@ function buildInstallmentSchedule(loan) {
     allocated = roundMoney(allocated + amountDue);
 
     installments.push({
-      loanId: loan._id,
+      loanId: loan.id || loan._id,
       borrowerId: loan.borrowerId,
       installmentNumber: index,
       dueDate: addFrequency(loan.disbursementDate, loan.installmentFrequency, index),

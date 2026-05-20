@@ -1,0 +1,337 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  borrower
+  field_officer
+  supervisor
+  admin
+}
+
+enum UserStatus {
+  active
+  inactive
+  pending
+}
+
+model User {
+  id        String     @id @default(uuid())
+  fullName  String
+  phone     String     @unique
+  email     String?    @unique
+  password  String
+  role      Role       @default(borrower)
+  status    UserStatus @default(active)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  // Relationships
+  borrowerProfile      BorrowerProfile?
+  auditLogsAsActor     AuditLog[]
+  verifiedProfiles     BorrowerProfile[] @relation("VerifiedProfiles")
+  approvedLoans        Loan[]            @relation("ApprovedLoans")
+  reviewedApplications LoanApplication[] @relation("ReviewedApplications")
+  notifications        Notification[]
+  assignedCases        OverdueCase[]     @relation("AssignedCases")
+  borrowerCases        OverdueCase[]     @relation("BorrowerCases")
+  approvedPayments     Payment[]         @relation("ApprovedPayments")
+  borrowerPayments     Payment[]         @relation("BorrowerPayments")
+  approvedReceipts     Receipt[]         @relation("ApprovedReceipts")
+  borrowerReceipts     Receipt[]         @relation("BorrowerReceipts")
+  visitLogs            VisitLog[]        @relation("OfficerVisitLogs")
+  installments         Installment[]     @relation("BorrowerInstallments")
+  loans                Loan[]            @relation("BorrowerLoans")
+  applications         LoanApplication[] @relation("BorrowerApplications")
+}
+
+enum VerificationStatus {
+  pending
+  verified
+  rejected
+}
+
+model BorrowerProfile {
+  id                 String             @id @default(uuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id])
+  fullName           String
+  phone              String
+  address            String
+  occupation         String
+  monthlyIncome      Float
+  nidNumber          String
+  nidImageUrl        String?
+  nomineeName        String?
+  nomineePhone       String?
+  verificationStatus VerificationStatus @default(pending)
+  verificationNotes  String?
+  verifiedById       String?
+  verifiedBy         User?              @relation("VerifiedProfiles", fields: [verifiedById], references: [id])
+  verifiedAt         DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+}
+
+enum InstallmentStatus {
+  upcoming
+  due
+  paid
+  overdue
+  partial
+}
+
+model Installment {
+  id                String            @id @default(uuid())
+  loanId            String
+  loan              Loan              @relation(fields: [loanId], references: [id])
+  borrowerId        String
+  borrower          User              @relation("BorrowerInstallments", fields: [borrowerId], references: [id])
+  installmentNumber Int
+  dueDate           DateTime
+  amountDue         Float
+  amountPaid        Float             @default(0)
+  status            InstallmentStatus @default(upcoming)
+  paidAt            DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  payments     Payment[]
+  receipts     Receipt[]
+  overdueCases OverdueCase[]
+
+  @@unique([loanId, installmentNumber])
+  @@index([borrowerId, dueDate])
+}
+
+enum LoanFrequency {
+  weekly
+  monthly
+}
+
+enum LoanStatus {
+  active
+  completed
+  defaulted
+}
+
+model Loan {
+  id                   String        @id @default(uuid())
+  borrowerId           String
+  borrower             User          @relation("BorrowerLoans", fields: [borrowerId], references: [id])
+  loanProductId        String
+  loanProduct          LoanProduct   @relation(fields: [loanProductId], references: [id])
+  principalAmount      Float
+  serviceChargeAmount  Float
+  totalPayableAmount   Float
+  durationMonths       Int
+  installmentFrequency LoanFrequency
+  numberOfInstallments Int
+  installmentAmount    Float
+  disbursementDate     DateTime
+  startDate            DateTime
+  endDate              DateTime
+  loanStatus           LoanStatus    @default(active)
+  approvedById         String
+  approvedBy           User          @relation("ApprovedLoans", fields: [approvedById], references: [id])
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  installments Installment[]
+  payments     Payment[]
+  receipts     Receipt[]
+  overdueCases OverdueCase[]
+}
+
+enum ApplicationStatus {
+  pending
+  approved
+  rejected
+}
+
+model LoanApplication {
+  id                String            @id @default(uuid())
+  borrowerId        String
+  borrower          User              @relation("BorrowerApplications", fields: [borrowerId], references: [id])
+  loanProductId     String
+  loanProduct       LoanProduct       @relation(fields: [loanProductId], references: [id])
+  requestedAmount   Float
+  purpose           String
+  applicationStatus ApplicationStatus @default(pending)
+  rejectionReason   String?
+  reviewedById      String?
+  reviewedBy        User?             @relation("ReviewedApplications", fields: [reviewedById], references: [id])
+  reviewedAt        DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+}
+
+enum ProductStatus {
+  active
+  inactive
+}
+
+model LoanProduct {
+  id                   String        @id @default(uuid())
+  productName          String
+  description          String
+  minAmount            Float
+  maxAmount            Float
+  serviceChargeRate    Float
+  durationMonths       Int
+  installmentFrequency LoanFrequency
+  numberOfInstallments Int
+  lateFeeAmount        Float         @default(0)
+  eligibilityNote      String?
+  status               ProductStatus @default(active)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  loans        Loan[]
+  applications LoanApplication[]
+}
+
+enum NotificationType {
+  info
+  success
+  warning
+  danger
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  type      NotificationType @default(info)
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([userId])
+}
+
+enum CaseStatus {
+  assigned
+  visited
+  follow_up_required
+  resolved
+}
+
+enum Priority {
+  normal
+  urgent
+}
+
+model OverdueCase {
+  id                String       @id @default(uuid())
+  borrowerId        String
+  borrower          User         @relation("BorrowerCases", fields: [borrowerId], references: [id])
+  loanId            String
+  loan              Loan         @relation(fields: [loanId], references: [id])
+  installmentId     String?
+  installment       Installment? @relation(fields: [installmentId], references: [id])
+  assignedOfficerId String
+  assignedOfficer   User         @relation("AssignedCases", fields: [assignedOfficerId], references: [id])
+  caseStatus        CaseStatus   @default(assigned)
+  priority          Priority     @default(normal)
+  notes             String?
+  assignedAt        DateTime     @default(now())
+  resolvedAt        DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  visitLogs VisitLog[]
+}
+
+enum PaymentMethod {
+  bKash
+  Nagad
+  Rocket
+  Card
+  CashAssist @map("Cash Assist")
+}
+
+enum PaymentStatus {
+  pending
+  approved
+  rejected
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  borrowerId      String
+  borrower        User          @relation("BorrowerPayments", fields: [borrowerId], references: [id])
+  loanId          String
+  loan            Loan          @relation(fields: [loanId], references: [id])
+  installmentId   String
+  installment     Installment   @relation(fields: [installmentId], references: [id])
+  amount          Float
+  paymentMethod   PaymentMethod
+  transactionId   String
+  paymentStatus   PaymentStatus @default(pending)
+  submittedAt     DateTime      @default(now())
+  approvedById    String?
+  approvedBy      User?         @relation("ApprovedPayments", fields: [approvedById], references: [id])
+  approvedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  receipts Receipt[]
+}
+
+model Receipt {
+  id            String      @id @default(uuid())
+  receiptNumber String      @unique
+  paymentId     String
+  payment       Payment     @relation(fields: [paymentId], references: [id])
+  borrowerId    String
+  borrower      User        @relation("BorrowerReceipts", fields: [borrowerId], references: [id])
+  loanId        String
+  loan          Loan        @relation(fields: [loanId], references: [id])
+  installmentId String
+  installment   Installment @relation(fields: [installmentId], references: [id])
+  amount        Float
+  paymentMethod String
+  transactionId String
+  paymentDate   DateTime
+  approvedById  String
+  approvedBy    User        @relation("ApprovedReceipts", fields: [approvedById], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model VisitLog {
+  id               String      @id @default(uuid())
+  caseId           String
+  case             OverdueCase @relation(fields: [caseId], references: [id])
+  officerId        String
+  officer          User        @relation("OfficerVisitLogs", fields: [officerId], references: [id])
+  visitDate        DateTime
+  visitOutcome     String
+  borrowerResponse String
+  nextFollowUpDate DateTime?
+  notes            String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorId     String
+  actor       User     @relation(fields: [actorId], references: [id])
+  actorRole   String
+  actionType  String
+  targetType  String
+  targetId    String
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

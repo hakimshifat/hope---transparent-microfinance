@@ -1,5 +1,6 @@
 const express = require("express");
-const User = require("../models/User");
+const prisma = require("../config/prisma");
+const bcrypt = require("bcryptjs");
 const asyncHandler = require("../utils/asyncHandler");
 const { protect, authorize } = require("../middleware/auth");
 
@@ -14,8 +15,15 @@ router.get(
   asyncHandler(async (req, res) => {
     const filter = {};
     if (req.query.role) filter.role = req.query.role;
-    const users = await User.find(filter).sort({ createdAt: -1 });
-    res.json(users);
+    const users = await prisma.user.findMany({
+      where: filter,
+      orderBy: { createdAt: "desc" },
+    });
+    const safeUsers = users.map((u) => {
+      const { password, ...safeUser } = u;
+      return safeUser;
+    });
+    res.json(safeUsers);
   })
 );
 
@@ -35,8 +43,14 @@ router.post(
       return res.status(400).json({ message: "Invalid role or status" });
     }
 
-    const user = await User.create({ fullName, phone, email, password, role, status });
-    res.status(201).json(user);
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: { fullName, phone, email, password: hashedPassword, role, status },
+    });
+
+    const safeUser = { ...user };
+    delete safeUser.password;
+    res.status(201).json(safeUser);
   })
 );
 
@@ -50,9 +64,18 @@ router.patch(
       return res.status(400).json({ message: "Invalid status" });
     }
 
-    const user = await User.findByIdAndUpdate(req.params.id, { status }, { new: true });
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json(user);
+    try {
+      const user = await prisma.user.update({
+        where: { id: req.params.id },
+        data: { status },
+      });
+      const safeUser = { ...user };
+      delete safeUser.password;
+      res.json(safeUser);
+    } catch (error) {
+      if (error.code === 'P2025') return res.status(404).json({ message: "User not found" });
+      throw error;
+    }
   })
 );
 
@@ -66,13 +89,22 @@ router.patch(
       return res.status(400).json({ message: "Invalid role" });
     }
 
-    if (String(req.user._id) === req.params.id && role !== "admin") {
+    if (String(req.user.id) === req.params.id && role !== "admin") {
       return res.status(400).json({ message: "You cannot remove your own admin role" });
     }
 
-    const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true });
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json(user);
+    try {
+      const user = await prisma.user.update({
+        where: { id: req.params.id },
+        data: { role },
+      });
+      const safeUser = { ...user };
+      delete safeUser.password;
+      res.json(safeUser);
+    } catch (error) {
+      if (error.code === 'P2025') return res.status(404).json({ message: "User not found" });
+      throw error;
+    }
   })
 );
 

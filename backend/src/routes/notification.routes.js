@@ -1,5 +1,5 @@
 const express = require("express");
-const Notification = require("../models/Notification");
+const prisma = require("../config/prisma");
 const asyncHandler = require("../utils/asyncHandler");
 const { protect } = require("../middleware/auth");
 
@@ -9,9 +9,11 @@ router.get(
   "/my",
   protect,
   asyncHandler(async (req, res) => {
-    const notifications = await Notification.find({ userId: req.user._id })
-      .sort({ createdAt: -1 })
-      .limit(30);
+    const notifications = await prisma.notification.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 30
+    });
     res.json(notifications);
   })
 );
@@ -20,12 +22,15 @@ router.patch(
   "/:id/read",
   protect,
   asyncHandler(async (req, res) => {
-    const notification = await Notification.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
-      { readAt: new Date() },
-      { new: true }
-    );
-    if (!notification) return res.status(404).json({ message: "Notification not found" });
+    const existing = await prisma.notification.findFirst({
+      where: { id: req.params.id, userId: req.user.id }
+    });
+    if (!existing) return res.status(404).json({ message: "Notification not found" });
+
+    const notification = await prisma.notification.update({
+      where: { id: req.params.id },
+      data: { readAt: new Date() }
+    });
     res.json(notification);
   })
 );
@@ -34,10 +39,10 @@ router.patch(
   "/read-all",
   protect,
   asyncHandler(async (req, res) => {
-    await Notification.updateMany(
-      { userId: req.user._id, $or: [{ readAt: null }, { readAt: { $exists: false } }] },
-      { readAt: new Date() }
-    );
+    await prisma.notification.updateMany({
+      where: { userId: req.user.id, readAt: null },
+      data: { readAt: new Date() }
+    });
     res.json({ message: "Notifications marked as read" });
   })
 );

@@ -1,6 +1,5 @@
 const express = require("express");
-const OverdueCase = require("../models/OverdueCase");
-const VisitLog = require("../models/VisitLog");
+const prisma = require("../config/prisma");
 const asyncHandler = require("../utils/asyncHandler");
 const writeAudit = require("../utils/audit");
 const { notifyUser } = require("../utils/notify");
@@ -18,38 +17,50 @@ router.post(
       return res.status(400).json({ message: "caseId, visitDate, visitOutcome and borrowerResponse are required" });
     }
 
-    const overdueCase = await OverdueCase.findById(caseId);
-    if (!overdueCase || String(overdueCase.assignedOfficerId) !== String(req.user._id)) {
+    let overdueCase = await prisma.overdueCase.findUnique({ where: { id: caseId } });
+    if (!overdueCase || String(overdueCase.assignedOfficerId) !== String(req.user.id)) {
       return res.status(403).json({ message: "This case is not assigned to you" });
     }
 
-    const visitLog = await VisitLog.create({
-      caseId,
-      officerId: req.user._id,
-      visitDate,
-      visitOutcome,
-      borrowerResponse,
-      nextFollowUpDate,
-      notes
+    const visitLog = await prisma.visitLog.create({
+      data: {
+        caseId,
+        officerId: req.user.id,
+        visitDate,
+        visitOutcome,
+        borrowerResponse,
+        nextFollowUpDate: nextFollowUpDate || null,
+        notes
+      }
     });
 
+    let newCaseStatus = overdueCase.caseStatus;
+    let resolvedAt = overdueCase.resolvedAt;
+
     if (caseStatus && ["visited", "follow_up_required", "resolved"].includes(caseStatus)) {
-      overdueCase.caseStatus = caseStatus;
-      overdueCase.resolvedAt = caseStatus === "resolved" ? new Date() : undefined;
+      newCaseStatus = caseStatus;
+      resolvedAt = caseStatus === "resolved" ? new Date() : null;
     } else if (overdueCase.caseStatus === "assigned") {
-      overdueCase.caseStatus = "visited";
+      newCaseStatus = "visited";
     }
-    await overdueCase.save();
+
+    overdueCase = await prisma.overdueCase.update({
+      where: { id: caseId },
+      data: {
+        caseStatus: newCaseStatus,
+        resolvedAt
+      }
+    });
 
     await writeAudit(
       req.user,
       "visit_log_submitted",
       "VisitLog",
-      visitLog._id,
+      visitLog.id,
       `Submitted visit log for overdue case ${caseId}`
     );
 
-    if (caseStatus === "resolved") {
+    if (newCaseStatus === "resolved") {
       await notifyUser(overdueCase.borrowerId, {
         title: "Visit follow-up resolved",
         message: "Your field visit follow-up was marked as resolved.",
@@ -73,20 +84,22 @@ router.get(
   "/case/:caseId",
   protect,
   asyncHandler(async (req, res) => {
-    const overdueCase = await OverdueCase.findById(req.params.caseId);
+    const overdueCase = await prisma.overdueCase.findUnique({ where: { id: req.params.caseId } });
     if (!overdueCase) return res.status(404).json({ message: "Case not found" });
 
     const canView =
       ["admin", "supervisor"].includes(req.user.role) ||
-      (req.user.role === "field_officer" && String(overdueCase.assignedOfficerId) === String(req.user._id));
+      (req.user.role === "field_officer" && String(overdueCase.assignedOfficerId) === String(req.user.id));
 
     if (!canView) {
       return res.status(403).json({ message: "You do not have permission to view these visit logs" });
     }
 
-    const logs = await VisitLog.find({ caseId: req.params.caseId })
-      .populate("officerId", "fullName phone")
-      .sort({ visitDate: -1 });
+    const logs = await prisma.visitLog.findMany({
+      where: { caseId: req.params.caseId },
+      include: { officer: { select: { fullName: true, phone: true } } },
+      orderBy: { visitDate: 'desc' }
+    });
     res.json(logs);
   })
 );
@@ -96,17 +109,19 @@ router.get(
   protect,
   authorize("admin", "supervisor"),
   asyncHandler(async (req, res) => {
-    const logs = await VisitLog.find()
-      .populate("officerId", "fullName phone")
-      .populate({
-        path: "caseId",
-        populate: [
-          { path: "borrowerId", select: "fullName phone" },
-          { path: "assignedOfficerId", select: "fullName" }
-        ]
-      })
-      .sort({ visitDate: -1 })
-      .limit(200);
+    const logs = await prisma.visitLog.findMany({
+      include: {
+        officer: { select: { fullName: true, phone: true } },
+        case: {
+          include: {
+            borrower: { select: { fullName: true, phone: true } },
+            assignedOfficer: { select: { fullName: true } }
+          }
+        }
+      },
+      orderBy: { visitDate: 'desc' },
+      take: 200
+    });
     res.json(logs);
   })
 );

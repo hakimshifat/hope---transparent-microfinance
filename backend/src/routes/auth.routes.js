@@ -1,5 +1,6 @@
 const express = require("express");
-const User = require("../models/User");
+const prisma = require("../config/prisma");
+const bcrypt = require("bcryptjs");
 const asyncHandler = require("../utils/asyncHandler");
 const { protect, signToken } = require("../middleware/auth");
 
@@ -15,21 +16,33 @@ router.post(
       return res.status(400).json({ message: "fullName, phone and password are required" });
     }
 
-    const existing = await User.findOne({ $or: [{ phone }, ...(email ? [{ email }] : [])] });
+    const existing = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { phone },
+          ...(email ? [{ email }] : [])
+        ]
+      }
+    });
+
     if (existing) {
       return res.status(409).json({ message: "A user with this phone or email already exists" });
     }
 
-    const user = await User.create({
-      fullName,
-      phone,
-      email,
-      password,
-      role: "borrower",
-      status: "active"
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        fullName,
+        phone,
+        email,
+        password: hashedPassword,
+        role: "borrower",
+        status: "active"
+      }
     });
 
-    const safeUser = user.toObject();
+    const safeUser = { ...user };
     delete safeUser.password;
 
     res.status(201).json({ token: signToken(user), user: safeUser });
@@ -46,11 +59,16 @@ router.post(
       return res.status(400).json({ message: "Login identifier and password are required" });
     }
 
-    const user = await User.findOne({
-      $or: [{ phone: loginId }, { email: loginId.toLowerCase() }]
-    }).select("+password");
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { phone: loginId },
+          { email: loginId.toLowerCase() }
+        ]
+      }
+    });
 
-    if (!user || !(await user.comparePassword(password))) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
@@ -58,7 +76,7 @@ router.post(
       return res.status(403).json({ message: "Account is not active" });
     }
 
-    const safeUser = user.toObject();
+    const safeUser = { ...user };
     delete safeUser.password;
 
     res.json({ token: signToken(user), user: safeUser });

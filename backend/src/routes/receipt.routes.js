@@ -1,5 +1,5 @@
 const express = require("express");
-const Receipt = require("../models/Receipt");
+const prisma = require("../config/prisma");
 const asyncHandler = require("../utils/asyncHandler");
 const { protect, authorize } = require("../middleware/auth");
 
@@ -10,10 +10,14 @@ router.get(
   protect,
   authorize("borrower"),
   asyncHandler(async (req, res) => {
-    const receipts = await Receipt.find({ borrowerId: req.user._id })
-      .populate("installmentId")
-      .populate("approvedBy", "fullName role")
-      .sort({ paymentDate: -1 });
+    const receipts = await prisma.receipt.findMany({
+      where: { borrowerId: req.user.id },
+      include: {
+        installment: true,
+        approvedBy: { select: { fullName: true, role: true } }
+      },
+      orderBy: { paymentDate: 'desc' }
+    });
     res.json(receipts);
   })
 );
@@ -22,13 +26,17 @@ router.get(
   "/:id",
   protect,
   asyncHandler(async (req, res) => {
-    const receipt = await Receipt.findById(req.params.id)
-      .populate("borrowerId", "fullName phone")
-      .populate("installmentId")
-      .populate("approvedBy", "fullName role");
+    const receipt = await prisma.receipt.findUnique({
+      where: { id: req.params.id },
+      include: {
+        borrower: { select: { fullName: true, phone: true } },
+        installment: true,
+        approvedBy: { select: { fullName: true, role: true } }
+      }
+    });
 
     if (!receipt) return res.status(404).json({ message: "Receipt not found" });
-    const isOwner = req.user.role === "borrower" && String(receipt.borrowerId._id) === String(req.user._id);
+    const isOwner = req.user.role === "borrower" && String(receipt.borrowerId) === String(req.user.id);
     const isReviewer = ["admin", "supervisor"].includes(req.user.role);
 
     if (!isOwner && !isReviewer) {

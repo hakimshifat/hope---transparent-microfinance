@@ -1,22 +1,11 @@
 const express = require("express");
-const Installment = require("../models/Installment");
-const Loan = require("../models/Loan");
-const OverdueCase = require("../models/OverdueCase");
-const User = require("../models/User");
+const prisma = require("../config/prisma");
 const asyncHandler = require("../utils/asyncHandler");
 const writeAudit = require("../utils/audit");
 const { notifyUser } = require("../utils/notify");
 const { protect, authorize } = require("../middleware/auth");
 
 const router = express.Router();
-
-function casePopulate(query) {
-  return query
-    .populate("borrowerId", "fullName phone email")
-    .populate("loanId")
-    .populate("installmentId")
-    .populate("assignedOfficerId", "fullName phone");
-}
 
 router.post(
   "/assign",
@@ -28,10 +17,8 @@ router.post(
       return res.status(400).json({ message: "borrowerId, loanId and assignedOfficerId are required" });
     }
 
-    const [officer, loan] = await Promise.all([
-      User.findById(assignedOfficerId),
-      Loan.findById(loanId)
-    ]);
+    const officer = await prisma.user.findUnique({ where: { id: assignedOfficerId } });
+    const loan = await prisma.loan.findUnique({ where: { id: loanId } });
 
     if (!officer || officer.role !== "field_officer") {
       return res.status(400).json({ message: "Assigned user must be a field officer" });
@@ -42,26 +29,34 @@ router.post(
     }
 
     if (installmentId) {
-      const installment = await Installment.findById(installmentId);
+      const installment = await prisma.installment.findUnique({ where: { id: installmentId } });
       if (!installment || String(installment.loanId) !== String(loanId)) {
         return res.status(400).json({ message: "Installment does not belong to loan" });
       }
     }
 
-    const overdueCase = await OverdueCase.create({
-      borrowerId,
-      loanId,
-      installmentId,
-      assignedOfficerId,
-      priority,
-      notes
+    const overdueCase = await prisma.overdueCase.create({
+      data: {
+        borrowerId,
+        loanId,
+        installmentId: installmentId || null,
+        assignedOfficerId,
+        priority,
+        notes
+      },
+      include: {
+        borrower: { select: { fullName: true, phone: true, email: true } },
+        loan: true,
+        installment: true,
+        assignedOfficer: { select: { fullName: true, phone: true } }
+      }
     });
 
     await writeAudit(
       req.user,
       "overdue_case_assigned",
       "OverdueCase",
-      overdueCase._id,
+      overdueCase.id,
       `Assigned overdue case to ${officer.fullName}`
     );
 
@@ -79,7 +74,7 @@ router.post(
       link: "/borrower"
     });
 
-    res.status(201).json(await casePopulate(OverdueCase.findById(overdueCase._id)));
+    res.status(201).json(overdueCase);
   })
 );
 
@@ -88,9 +83,16 @@ router.get(
   protect,
   authorize("field_officer"),
   asyncHandler(async (req, res) => {
-    const cases = await casePopulate(
-      OverdueCase.find({ assignedOfficerId: req.user._id }).sort({ assignedAt: -1 })
-    );
+    const cases = await prisma.overdueCase.findMany({
+      where: { assignedOfficerId: req.user.id },
+      include: {
+        borrower: { select: { fullName: true, phone: true, email: true } },
+        loan: true,
+        installment: true,
+        assignedOfficer: { select: { fullName: true, phone: true } }
+      },
+      orderBy: { assignedAt: 'desc' }
+    });
     res.json(cases);
   })
 );
@@ -100,7 +102,15 @@ router.get(
   protect,
   authorize("admin", "supervisor"),
   asyncHandler(async (req, res) => {
-    const cases = await casePopulate(OverdueCase.find().sort({ assignedAt: -1 }));
+    const cases = await prisma.overdueCase.findMany({
+      include: {
+        borrower: { select: { fullName: true, phone: true, email: true } },
+        loan: true,
+        installment: true,
+        assignedOfficer: { select: { fullName: true, phone: true } }
+      },
+      orderBy: { assignedAt: 'desc' }
+    });
     res.json(cases);
   })
 );
@@ -114,21 +124,31 @@ router.patch(
       return res.status(400).json({ message: "Invalid case status" });
     }
 
-    const overdueCase = await OverdueCase.findById(req.params.id);
+    let overdueCase = await prisma.overdueCase.findUnique({ where: { id: req.params.id } });
     if (!overdueCase) return res.status(404).json({ message: "Case not found" });
 
     const canUpdate =
       ["admin", "supervisor"].includes(req.user.role) ||
-      (req.user.role === "field_officer" && String(overdueCase.assignedOfficerId) === String(req.user._id));
+      (req.user.role === "field_officer" && String(overdueCase.assignedOfficerId) === String(req.user.id));
 
     if (!canUpdate) {
       return res.status(403).json({ message: "You do not have permission to update this case" });
     }
 
-    overdueCase.caseStatus = caseStatus;
-    if (notes !== undefined) overdueCase.notes = notes;
-    overdueCase.resolvedAt = caseStatus === "resolved" ? new Date() : undefined;
-    await overdueCase.save();
+    overdueCase = await prisma.overdueCase.update({
+      where: { id: req.params.id },
+      data: {
+        caseStatus,
+        notes: notes !== undefined ? notes : overdueCase.notes,
+        resolvedAt: caseStatus === "resolved" ? new Date() : null
+      },
+      include: {
+        borrower: { select: { fullName: true, phone: true, email: true } },
+        loan: true,
+        installment: true,
+        assignedOfficer: { select: { fullName: true, phone: true } }
+      }
+    });
 
     if (caseStatus === "resolved") {
       await notifyUser(overdueCase.borrowerId, {
@@ -139,7 +159,7 @@ router.patch(
       });
     }
 
-    res.json(await casePopulate(OverdueCase.findById(overdueCase._id)));
+    res.json(overdueCase);
   })
 );
 

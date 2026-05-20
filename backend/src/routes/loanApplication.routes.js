@@ -1,9 +1,5 @@
 const express = require("express");
-const BorrowerProfile = require("../models/BorrowerProfile");
-const Installment = require("../models/Installment");
-const Loan = require("../models/Loan");
-const LoanApplication = require("../models/LoanApplication");
-const LoanProduct = require("../models/LoanProduct");
+const prisma = require("../config/prisma");
 const asyncHandler = require("../utils/asyncHandler");
 const writeAudit = require("../utils/audit");
 const { buildLoanData, buildInstallmentSchedule } = require("../utils/loanCalculator");
@@ -12,7 +8,7 @@ const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
 
 async function ensureBorrowerCanApply(userId) {
-  const profile = await BorrowerProfile.findOne({ userId });
+  const profile = await prisma.borrowerProfile.findUnique({ where: { userId } });
   if (!profile) {
     const error = new Error("Complete borrower profile before applying");
     error.statusCode = 400;
@@ -27,7 +23,7 @@ async function ensureBorrowerCanApply(userId) {
     throw error;
   }
 
-  const activeLoan = await Loan.findOne({ borrowerId: userId, loanStatus: "active" });
+  const activeLoan = await prisma.loan.findFirst({ where: { borrowerId: userId, loanStatus: "active" } });
   if (activeLoan) {
     const error = new Error("Borrower cannot have more than one active loan");
     error.statusCode = 400;
@@ -47,20 +43,22 @@ router.post(
       return res.status(400).json({ message: "loanProductId, requestedAmount and purpose are required" });
     }
 
-    await ensureBorrowerCanApply(req.user._id);
+    await ensureBorrowerCanApply(req.user.id);
 
-    const product = await LoanProduct.findOne({ _id: loanProductId, status: "active" });
+    const product = await prisma.loanProduct.findFirst({ where: { id: loanProductId, status: "active" } });
     if (!product) return res.status(404).json({ message: "Active loan product not found" });
 
     if (requestedAmount < product.minAmount || requestedAmount > product.maxAmount) {
       return res.status(400).json({ message: "Requested amount is outside product limits" });
     }
 
-    const application = await LoanApplication.create({
-      borrowerId: req.user._id,
-      loanProductId,
-      requestedAmount,
-      purpose
+    const application = await prisma.loanApplication.create({
+      data: {
+        borrowerId: req.user.id,
+        loanProductId,
+        requestedAmount,
+        purpose
+      }
     });
 
     res.status(201).json(application);
@@ -72,11 +70,14 @@ router.get(
   protect,
   authorize("admin", "supervisor"),
   asyncHandler(async (req, res) => {
-    const applications = await LoanApplication.find()
-      .populate("borrowerId", "fullName phone")
-      .populate("loanProductId")
-      .populate("reviewedBy", "fullName role")
-      .sort({ createdAt: -1 });
+    const applications = await prisma.loanApplication.findMany({
+      include: {
+        borrower: { select: { fullName: true, phone: true } },
+        loanProduct: true,
+        reviewedBy: { select: { fullName: true, role: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
     res.json(applications);
   })
 );
@@ -86,10 +87,14 @@ router.get(
   protect,
   authorize("borrower"),
   asyncHandler(async (req, res) => {
-    const applications = await LoanApplication.find({ borrowerId: req.user._id })
-      .populate("loanProductId")
-      .populate("reviewedBy", "fullName role")
-      .sort({ createdAt: -1 });
+    const applications = await prisma.loanApplication.findMany({
+      where: { borrowerId: req.user.id },
+      include: {
+        loanProduct: true,
+        reviewedBy: { select: { fullName: true, role: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
     res.json(applications);
   })
 );
@@ -99,48 +104,62 @@ router.patch(
   protect,
   authorize("admin", "supervisor"),
   asyncHandler(async (req, res) => {
-    const application = await LoanApplication.findById(req.params.id).populate("loanProductId");
+    const application = await prisma.loanApplication.findUnique({
+      where: { id: req.params.id },
+      include: { loanProduct: true }
+    });
     if (!application) return res.status(404).json({ message: "Loan application not found" });
     if (application.applicationStatus !== "pending") {
       return res.status(400).json({ message: "Only pending applications can be approved" });
     }
 
-    const profile = await BorrowerProfile.findOne({ userId: application.borrowerId });
+    const profile = await prisma.borrowerProfile.findUnique({ where: { userId: application.borrowerId } });
     if (!profile || profile.verificationStatus !== "verified") {
       return res.status(400).json({ message: "Borrower must be verified before approval" });
     }
 
-    const activeLoan = await Loan.findOne({ borrowerId: application.borrowerId, loanStatus: "active" });
+    const activeLoan = await prisma.loan.findFirst({ where: { borrowerId: application.borrowerId, loanStatus: "active" } });
     if (activeLoan) {
       return res.status(400).json({ message: "Borrower already has an active loan" });
     }
 
-    const product = application.loanProductId;
-    const loan = await Loan.create(
-      buildLoanData({
-        borrowerId: application.borrowerId,
-        product,
-        principalAmount: application.requestedAmount,
-        approvedBy: req.user._id
-      })
-    );
+    const product = application.loanProduct;
+    const loanData = buildLoanData({
+      borrowerId: application.borrowerId,
+      product,
+      principalAmount: application.requestedAmount,
+      approvedBy: req.user.id
+    });
 
-    await Installment.insertMany(buildInstallmentSchedule(loan));
+    // Generate UUID for loan
+    const loan = await prisma.loan.create({
+      data: loanData
+    });
 
-    application.applicationStatus = "approved";
-    application.reviewedBy = req.user._id;
-    application.reviewedAt = new Date();
-    await application.save();
+    const schedule = buildInstallmentSchedule(loan).map(item => ({
+      ...item,
+      dueDate: new Date(item.dueDate)
+    }));
+    await prisma.installment.createMany({ data: schedule });
+
+    const updatedApp = await prisma.loanApplication.update({
+      where: { id: application.id },
+      data: {
+        applicationStatus: "approved",
+        reviewedById: req.user.id,
+        reviewedAt: new Date()
+      }
+    });
 
     await writeAudit(
       req.user,
       "loan_application_approved",
       "LoanApplication",
-      application._id,
-      `Approved loan application and created loan ${loan._id}`
+      updatedApp.id,
+      `Approved loan application and created loan ${loan.id}`
     );
 
-    res.json({ application, loan });
+    res.json({ application: updatedApp, loan });
   })
 );
 
@@ -150,23 +169,27 @@ router.patch(
   authorize("admin", "supervisor"),
   asyncHandler(async (req, res) => {
     const { rejectionReason } = req.body;
-    const application = await LoanApplication.findById(req.params.id);
+    let application = await prisma.loanApplication.findUnique({ where: { id: req.params.id } });
     if (!application) return res.status(404).json({ message: "Loan application not found" });
     if (application.applicationStatus !== "pending") {
       return res.status(400).json({ message: "Only pending applications can be rejected" });
     }
 
-    application.applicationStatus = "rejected";
-    application.rejectionReason = rejectionReason || "Application rejected";
-    application.reviewedBy = req.user._id;
-    application.reviewedAt = new Date();
-    await application.save();
+    application = await prisma.loanApplication.update({
+      where: { id: req.params.id },
+      data: {
+        applicationStatus: "rejected",
+        rejectionReason: rejectionReason || "Application rejected",
+        reviewedById: req.user.id,
+        reviewedAt: new Date()
+      }
+    });
 
     await writeAudit(
       req.user,
       "loan_application_rejected",
       "LoanApplication",
-      application._id,
+      application.id,
       `Rejected loan application: ${application.rejectionReason}`
     );
 

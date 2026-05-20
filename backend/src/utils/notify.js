@@ -1,14 +1,17 @@
-const Notification = require("../models/Notification");
+const prisma = require("../config/prisma");
 
 async function notifyUser(userId, { title, message, type = "info", link }) {
   if (!userId || !title || !message) return null;
-  return Notification.create({ userId, title, message, type, link });
+  return prisma.notification.create({
+    data: { userId, title, message, type, link: link || null }
+  });
 }
 
 async function notifyUsers(userIds, payload) {
   const uniqueIds = [...new Set(userIds.filter(Boolean).map(String))];
   if (!uniqueIds.length) return [];
-  return Notification.insertMany(uniqueIds.map((userId) => ({ userId, ...payload })));
+  const data = uniqueIds.map((userId) => ({ userId, ...payload, link: payload.link || null }));
+  return prisma.notification.createMany({ data });
 }
 
 module.exports = { notifyUser, notifyUsers };

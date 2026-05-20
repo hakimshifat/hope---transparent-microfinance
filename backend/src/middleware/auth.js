@@ -1,9 +1,9 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const prisma = require("../config/prisma");
 
 function signToken(user) {
   return jwt.sign(
-    { id: user._id, role: user.role },
+    { id: user.id || user._id, role: user.role },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
   );
@@ -19,13 +19,16 @@ async function protect(req, res, next) {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select("-password");
+    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
 
     if (!user || user.status !== "active") {
       return res.status(401).json({ message: "Account is not active" });
     }
 
-    req.user = user;
+    const safeUser = { ...user };
+    delete safeUser.password;
+
+    req.user = safeUser;
     next();
   } catch (error) {
     res.status(401).json({ message: "Invalid or expired token" });

@@ -1,10 +1,5 @@
 const express = require("express");
-const Installment = require("../models/Installment");
-const Loan = require("../models/Loan");
-const OverdueCase = require("../models/OverdueCase");
-const Payment = require("../models/Payment");
-const Receipt = require("../models/Receipt");
-const User = require("../models/User");
+const prisma = require("../config/prisma");
 const asyncHandler = require("../utils/asyncHandler");
 const { roundMoney } = require("../utils/loanCalculator");
 const { refreshOverdueInstallments } = require("../utils/overdue");
@@ -14,9 +9,9 @@ const router = express.Router();
 
 async function canViewBorrowerLedger(user, borrowerId) {
   if (["admin", "supervisor"].includes(user.role)) return true;
-  if (user.role === "borrower" && String(user._id) === String(borrowerId)) return true;
+  if (user.role === "borrower" && String(user.id) === String(borrowerId)) return true;
   if (user.role === "field_officer") {
-    const assignedCase = await OverdueCase.findOne({ borrowerId, assignedOfficerId: user._id });
+    const assignedCase = await prisma.overdueCase.findFirst({ where: { borrowerId, assignedOfficerId: user.id } });
     return Boolean(assignedCase);
   }
   return false;
@@ -25,10 +20,15 @@ async function canViewBorrowerLedger(user, borrowerId) {
 async function buildLedger(borrowerId) {
   await refreshOverdueInstallments();
 
-  const borrower = await User.findById(borrowerId).select("fullName phone email");
-  const loans = await Loan.find({ borrowerId })
-    .populate("loanProductId")
-    .sort({ createdAt: -1 });
+  const borrower = await prisma.user.findUnique({
+    where: { id: borrowerId },
+    select: { fullName: true, phone: true, email: true }
+  });
+  const loans = await prisma.loan.findMany({
+    where: { borrowerId },
+    include: { loanProduct: true },
+    orderBy: { createdAt: 'desc' }
+  });
   const activeLoan = loans.find((loan) => loan.loanStatus === "active") || loans[0] || null;
 
   if (!activeLoan) {
@@ -52,9 +52,9 @@ async function buildLedger(borrowerId) {
   }
 
   const [installments, payments, receipts] = await Promise.all([
-    Installment.find({ loanId: activeLoan._id }).sort({ installmentNumber: 1 }),
-    Payment.find({ loanId: activeLoan._id }).sort({ submittedAt: -1 }),
-    Receipt.find({ loanId: activeLoan._id }).sort({ paymentDate: -1 })
+    prisma.installment.findMany({ where: { loanId: activeLoan.id }, orderBy: { installmentNumber: 'asc' } }),
+    prisma.payment.findMany({ where: { loanId: activeLoan.id }, orderBy: { submittedAt: 'desc' } }),
+    prisma.receipt.findMany({ where: { loanId: activeLoan.id }, orderBy: { paymentDate: 'desc' } })
   ]);
 
   const approvedPayments = payments.filter((payment) => payment.paymentStatus === "approved");
@@ -98,7 +98,7 @@ router.get(
   protect,
   authorize("borrower"),
   asyncHandler(async (req, res) => {
-    res.json(await buildLedger(req.user._id));
+    res.json(await buildLedger(req.user.id));
   })
 );
 

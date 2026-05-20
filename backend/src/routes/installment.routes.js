@@ -1,7 +1,5 @@
 const express = require("express");
-const Installment = require("../models/Installment");
-const Loan = require("../models/Loan");
-const OverdueCase = require("../models/OverdueCase");
+const prisma = require("../config/prisma");
 const asyncHandler = require("../utils/asyncHandler");
 const { refreshOverdueInstallments } = require("../utils/overdue");
 const { protect, authorize } = require("../middleware/auth");
@@ -10,11 +8,11 @@ const router = express.Router();
 
 async function canAccessLoanInstallments(user, loanId) {
   if (["admin", "supervisor"].includes(user.role)) return true;
-  const loan = await Loan.findById(loanId);
+  const loan = await prisma.loan.findUnique({ where: { id: loanId } });
   if (!loan) return false;
-  if (user.role === "borrower" && String(loan.borrowerId) === String(user._id)) return true;
+  if (user.role === "borrower" && String(loan.borrowerId) === String(user.id)) return true;
   if (user.role === "field_officer") {
-    const assignedCase = await OverdueCase.findOne({ loanId, assignedOfficerId: user._id });
+    const assignedCase = await prisma.overdueCase.findFirst({ where: { loanId, assignedOfficerId: user.id } });
     return Boolean(assignedCase);
   }
   return false;
@@ -26,9 +24,11 @@ router.get(
   authorize("borrower"),
   asyncHandler(async (req, res) => {
     await refreshOverdueInstallments();
-    const installments = await Installment.find({ borrowerId: req.user._id })
-      .populate("loanId")
-      .sort({ dueDate: 1 });
+    const installments = await prisma.installment.findMany({
+      where: { borrowerId: req.user.id },
+      include: { loan: true },
+      orderBy: { dueDate: 'asc' }
+    });
     res.json(installments);
   })
 );
@@ -42,7 +42,10 @@ router.get(
     }
 
     await refreshOverdueInstallments();
-    const installments = await Installment.find({ loanId: req.params.loanId }).sort({ installmentNumber: 1 });
+    const installments = await prisma.installment.findMany({
+      where: { loanId: req.params.loanId },
+      orderBy: { installmentNumber: 'asc' }
+    });
     res.json(installments);
   })
 );

@@ -1,21 +1,20 @@
-const Installment = require("../models/Installment");
+const prisma = require("../config/prisma");
 
 async function refreshOverdueInstallments() {
   const now = new Date();
-  const candidates = await Installment.find({
-    dueDate: { $lt: now },
-    status: { $in: ["upcoming", "due", "partial", "overdue"] }
+  
+  const result = await prisma.installment.updateMany({
+    where: {
+      dueDate: { lt: now },
+      status: { in: ["upcoming", "due", "partial", "overdue"] },
+      amountPaid: { lt: prisma.installment.fields.amountDue }
+    },
+    data: {
+      status: "overdue"
+    }
   });
 
-  const updates = candidates
-    .filter((installment) => installment.amountPaid < installment.amountDue)
-    .map((installment) => {
-      installment.status = "overdue";
-      return installment.save();
-    });
-
-  await Promise.all(updates);
-  return updates.length;
+  return result.count;
 }
 
 module.exports = { refreshOverdueInstallments };
