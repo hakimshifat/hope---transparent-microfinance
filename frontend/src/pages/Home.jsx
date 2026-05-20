@@ -116,16 +116,57 @@ export default function Home() {
 
         <div className="grid md:grid-cols-3 gap-8">
           {[
-            { title: "Borrower Portal", icon: Users, body: "Apply for loans, pay installments easily, and view your completely transparent ledger and receipt history.", delay: 700, color: "text-blue-400", bg: "bg-blue-400/10", border: "group-hover:border-blue-400/50" },
-            { title: "Supervisor Ops", icon: ShieldCheck, body: "Approve loans with confidence, review detailed payments, and strategically assign overdue cases.", delay: 800, color: "text-accent-light", bg: "bg-accent-light/10", border: "group-hover:border-accent-light/50" },
-            { title: "Field Officer App", icon: ClipboardList, body: "Handle assigned overdue borrowers, navigate to locations, and seamlessly submit detailed visit logs.", delay: 900, color: "text-purple-400", bg: "bg-purple-400/10", border: "group-hover:border-purple-400/50" }
-          ].map((role) => (
-            <div key={role.title} className={`glass-panel rounded-3xl p-8 hover-lift group opacity-0 animate-fade-in-up ${role.border}`} style={{ animationDelay: `${role.delay}ms` }}>
-              <div className={`h-14 w-14 rounded-2xl ${role.bg} border border-white/5 flex items-center justify-center mb-6 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6`}>
-                 <role.icon className={`h-7 w-7 ${role.color}`} />
+            { 
+              title: "100% Transparent Ledger", 
+              icon: ClipboardList, 
+              body: "Say goodbye to hidden fees. Track every single transaction, installment, and receipt in real-time.", 
+              features: ["Zero Hidden Fees", "Downloadable Receipts", "Live Balance Tracking"],
+              delay: 700, 
+              color: "text-blue-400", 
+              bg: "bg-blue-400/10", 
+              border: "group-hover:border-blue-400/50",
+              glow: "group-hover:shadow-[0_0_30px_rgba(96,165,250,0.2)]"
+            },
+            { 
+              title: "Smart Repayments", 
+              icon: CreditCard, 
+              body: "Automated scheduling and intelligent tracking help you stay on top of your financial goals effortlessly.", 
+              features: ["Automated Schedules", "Mock Repayment Engine", "Instant Status Updates"],
+              delay: 800, 
+              color: "text-accent-light", 
+              bg: "bg-accent-light/10", 
+              border: "group-hover:border-accent-light/50",
+              glow: "group-hover:shadow-[0_0_30px_rgba(56,189,248,0.2)]"
+            },
+            { 
+              title: "Dedicated Support", 
+              icon: Users, 
+              body: "Get immediate assistance with priority case resolution and dedicated field officers ready to help.", 
+              features: ["At-Home Assistance", "Priority Case Resolution", "Direct Communication"],
+              delay: 900, 
+              color: "text-purple-400", 
+              bg: "bg-purple-400/10", 
+              border: "group-hover:border-purple-400/50",
+              glow: "group-hover:shadow-[0_0_30px_rgba(192,132,252,0.2)]"
+            }
+          ].map((feature) => (
+            <div key={feature.title} className={`glass-panel rounded-3xl p-8 transition-all duration-500 group opacity-0 animate-fade-in-up hover:-translate-y-2 relative overflow-hidden flex flex-col ${feature.border} ${feature.glow}`} style={{ animationDelay: `${feature.delay}ms` }}>
+              <div className={`absolute -inset-4 opacity-0 group-hover:opacity-[0.03] transition-opacity duration-500 bg-gradient-to-br from-current to-transparent pointer-events-none ${feature.color}`}></div>
+              
+              <div className={`h-14 w-14 rounded-2xl ${feature.bg} border border-white/5 flex items-center justify-center mb-6 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3`}>
+                 <feature.icon className={`h-7 w-7 ${feature.color}`} />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-4 tracking-wide group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-slate-400 transition-colors">{role.title}</h3>
-              <p className="text-base leading-relaxed text-slate-400">{role.body}</p>
+              <h3 className="text-2xl font-extrabold text-white mb-3 tracking-wide group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-slate-300 transition-all">{feature.title}</h3>
+              <p className="text-base leading-relaxed text-slate-400 mb-6">{feature.body}</p>
+              
+              <div className="space-y-3 mt-auto pt-6 border-t border-white/5">
+                {feature.features.map(feat => (
+                  <div key={feat} className="flex items-center gap-3 text-sm font-medium text-slate-300 group-hover:text-white transition-colors">
+                    <BadgeCheck className={`h-4 w-4 ${feature.color}`} />
+                    {feat}
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>

@@ -9,11 +9,31 @@ const router = express.Router();
 router.post(
   "/register",
   asyncHandler(async (req, res) => {
-    const { fullName, phone, password } = req.body;
+    const { fullName, phone, password, nidNumber } = req.body;
     const email = req.body.email || undefined;
 
-    if (!fullName || !phone || !password) {
-      return res.status(400).json({ message: "fullName, phone and password are required" });
+    if (!fullName || !phone || !password || !nidNumber) {
+      return res.status(400).json({ message: "fullName, phone, password and nidNumber are required" });
+    }
+
+    if (!/^\d+$/.test(nidNumber)) {
+      return res.status(400).json({ message: "NID must contain only numbers" });
+    }
+    if (![13, 15, 17].includes(nidNumber.length)) {
+      return res.status(400).json({ message: "NID must be exactly 13, 15, or 17 digits long" });
+    }
+
+    if (fullName.trim().length < 3 || fullName.length > 100) {
+      return res.status(400).json({ message: "Full name must be between 3 and 100 characters" });
+    }
+    if (!/^\+?\d{10,15}$/.test(phone.replace(/\s/g, ""))) {
+      return res.status(400).json({ message: "Invalid phone number format" });
+    }
+    if (password.length < 6 || password.length > 50) {
+      return res.status(400).json({ message: "Password must be between 6 and 50 characters" });
+    }
+    if (email && email.length > 100) {
+      return res.status(400).json({ message: "Email is too long" });
     }
 
     const existing = await prisma.user.findFirst({
@@ -38,7 +58,17 @@ router.post(
         email,
         password: hashedPassword,
         role: "borrower",
-        status: "active"
+        status: "active",
+        borrowerProfile: {
+          create: {
+            fullName,
+            phone,
+            nidNumber,
+            address: "",
+            occupation: "",
+            monthlyIncome: 0
+          }
+        }
       }
     });
 

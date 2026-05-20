@@ -22,12 +22,13 @@ import {
   Users,
   X
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { title } from "../utils/format";
 import { useTheme } from "../context/ThemeContext";
 import NotificationBell from "./NotificationBell";
+import NProgress from "nprogress";
 
 function publicLinks() {
   return [
@@ -85,6 +86,17 @@ export default function Layout() {
   const { dark, toggle: toggleTheme } = useTheme();
   const links = user ? roleLinks(user.role) : publicLinks();
   const currentTab = new URLSearchParams(location.search).get("tab");
+
+  useEffect(() => {
+    NProgress.start();
+    const timer = setTimeout(() => {
+      NProgress.done();
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      NProgress.done();
+    };
+  }, [location.pathname, currentTab]);
 
   function handleLogout() {
     logout();

@@ -8,13 +8,21 @@ import heroImg from "../assets/hero-mockup.png";
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ fullName: "", phone: "", email: "", password: "" });
+  const [form, setForm] = useState({ fullName: "", phone: "", email: "", password: "", nidNumber: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
+
+    if (!/^\d+$/.test(form.nidNumber)) {
+      return setError("NID must contain only numbers");
+    }
+    if (![13, 15, 17].includes(form.nidNumber.length)) {
+      return setError("NID must be exactly 13, 15, or 17 digits long");
+    }
+
     setLoading(true);
     try {
       await register(form);
@@ -97,7 +105,7 @@ export default function Register() {
                   type="tel"
                   className="w-full rounded-2xl border border-white/10 bg-surfaceHighlight/40 px-5 py-3.5 text-slate-200 placeholder-slate-500 outline-none transition-all duration-300 focus:border-primary-500 focus:bg-white/5 focus:ring-4 focus:ring-primary-500/10 hover:border-white/20"
                   value={form.phone}
-                  onChange={(event) => setForm({ ...form, phone: event.target.value })}
+                  onChange={(event) => setForm({ ...form, phone: event.target.value.replace(/[^\d+]/g, "") })}
                   placeholder="+880 1XXX"
                   required
                 />
@@ -112,6 +120,18 @@ export default function Register() {
                 value={form.email}
                 onChange={(event) => setForm({ ...form, email: event.target.value })}
                 placeholder="john@example.com"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-sm font-semibold text-slate-300 ml-1">NID Number</label>
+              <input
+                type="text"
+                className="w-full rounded-2xl border border-white/10 bg-surfaceHighlight/40 px-5 py-4 text-slate-200 placeholder-slate-500 outline-none transition-all duration-300 focus:border-primary-500 focus:bg-white/5 focus:ring-4 focus:ring-primary-500/10 hover:border-white/20"
+                value={form.nidNumber}
+                onChange={(event) => setForm({ ...form, nidNumber: event.target.value.replace(/\D/g, "") })}
+                placeholder="13, 15, or 17 digit NID"
+                required
               />
             </div>
 

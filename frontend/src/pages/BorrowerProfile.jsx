@@ -11,7 +11,7 @@ export default function BorrowerProfile() {
   const [form, setForm] = useState({ ...emptyProfile, fullName: user.fullName, phone: user.phone });
   const [profile, setProfile] = useState(null);
   const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,25 +28,43 @@ export default function BorrowerProfile() {
   }, [user.fullName, user.phone]);
 
   async function handleSubmit(event) {
-    event.preventDefault(); setMessage(""); setError("");
+    event.preventDefault(); setMessage(""); setErrors({});
+    
+    const newErrors = {};
+    if (!form.nidNumber) newErrors.nidNumber = "NID is required";
+    else if (!/^\d+$/.test(form.nidNumber)) newErrors.nidNumber = "NID must contain only numbers";
+    else if (![13, 15, 17].includes(form.nidNumber.length)) newErrors.nidNumber = "NID must be exactly 13, 15, or 17 digits";
+
+    if (form.monthlyIncome === "" || isNaN(form.monthlyIncome) || Number(form.monthlyIncome) < 0) {
+      newErrors.monthlyIncome = "Income must be a valid positive number";
+    }
+
+    if (!form.address?.trim()) newErrors.address = "Address is required";
+    if (!form.occupation?.trim()) newErrors.occupation = "Occupation is required";
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     try {
       const payload = { ...form, monthlyIncome: Number(form.monthlyIncome) };
       const { data } = profile ? await api.patch("/borrowers/profile", payload) : await api.post("/borrowers/profile", payload);
       setProfile(data);
       setMessage("Profile saved. Verification status is pending until review.");
-    } catch (err) { setError(getErrorMessage(err)); }
+    } catch (err) { setErrors({ global: getErrorMessage(err) }); }
   }
 
   function handleDocumentUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-    setError("");
+    setErrors(e => ({ ...e, nidImageUrl: null }));
     if (!file.type.startsWith("image/")) {
-      setError("Please upload an image file for the NID document.");
+      setErrors(e => ({ ...e, nidImageUrl: "Please upload an image file for the NID document." }));
       return;
     }
     if (file.size > 900 * 1024) {
-      setError("Document image must be under 900 KB for this MVP upload.");
+      setErrors(e => ({ ...e, nidImageUrl: "Document image must be under 900 KB for this MVP upload." }));
       return;
     }
     const reader = new FileReader();
@@ -68,29 +86,72 @@ export default function BorrowerProfile() {
 
       <div className="glass-panel rounded-2xl p-6 opacity-0 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
         {message ? <div className="mb-5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-400">{message}</div> : null}
-        {error ? <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-400">{error}</div> : null}
+        {errors.global ? <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-400">{errors.global}</div> : null}
 
         <form onSubmit={handleSubmit} className="grid gap-5 md:grid-cols-2">
           {[
-            ["fullName", "Full name", "text", true, false],
-            ["phone", "Phone", "tel", true, false],
-            ["address", "Address", "text", true, true],
-            ["occupation", "Occupation", "text", true, false],
-            ["monthlyIncome", "Monthly income (৳)", "number", true, false],
-            ["nidNumber", "NID number", "text", true, false],
-            ["nomineeName", "Nominee name", "text", false, false],
-            ["nomineePhone", "Nominee phone", "tel", false, false]
-          ].map(([name, label, type, required, full]) => (
-            <label className={full ? "md:col-span-2" : ""} key={name}>
+            { name: "fullName", label: "Full name", type: "text", required: true, full: false },
+            { name: "phone", label: "Phone", type: "tel", required: true, full: false },
+            { name: "address", label: "Address", type: "text", required: true, full: true },
+            { 
+              name: "occupation", 
+              label: "Occupation", 
+              type: "select", 
+              required: true, 
+              full: false,
+              options: [
+                "Farmer / Agriculture",
+                "Day Laborer",
+                "Garment Worker",
+                "Small Business / Shopkeeper",
+                "Rickshaw / Van Puller",
+                "Domestic Worker",
+                "Handicraft / Artisan",
+                "Poultry / Livestock",
+                "Fisherman",
+                "Tailor",
+                "Teacher / Tutor",
+                "Student",
+                "Other"
+              ]
+            },
+            { name: "monthlyIncome", label: "Monthly income (৳)", type: "number", required: true, full: false },
+            { name: "nidNumber", label: "NID number", type: "text", required: true, full: false },
+            { name: "nomineeName", label: "Nominee name", type: "text", required: false, full: false },
+            { name: "nomineePhone", label: "Nominee phone", type: "tel", required: false, full: false }
+          ].map(({ name, label, type, required, full, options }) => (
+            <label className={full ? "md:col-span-2 block" : "block"} key={name}>
               <span className="mb-2 block text-sm font-medium text-slate-300">{label}</span>
-              <input
-                type={type}
-                className="w-full rounded-xl border border-white/10 bg-surfaceHighlight/50 px-4 py-3 text-slate-200 placeholder-slate-500 outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
-                value={form[name]}
-                onChange={(e) => setForm({ ...form, [name]: e.target.value })}
-                required={required}
-                min={type === "number" ? 0 : undefined}
-              />
+              {type === "select" ? (
+                <select
+                  className={`w-full rounded-xl border ${errors[name] ? 'border-red-500/50 bg-red-500/5 focus:border-red-500 focus:ring-red-500/20 text-red-500 animate-error-blink' : 'border-white/10 bg-surfaceHighlight/50 focus:border-primary-500 focus:ring-primary-500/20 text-slate-200'} px-4 py-3 placeholder-slate-500 outline-none transition-all focus:ring-2`}
+                  value={form[name]}
+                  onChange={(e) => {
+                    setForm({ ...form, [name]: e.target.value });
+                    if (errors[name]) setErrors({ ...errors, [name]: null });
+                  }}
+                  required={required}
+                >
+                  <option value="" disabled>Select your occupation</option>
+                  {options.map(opt => <option key={opt} value={opt} className="bg-slate-800 text-slate-200">{opt}</option>)}
+                </select>
+              ) : (
+                <input
+                  type={type}
+                  className={`w-full rounded-xl border ${errors[name] ? 'border-red-500/50 bg-red-500/5 focus:border-red-500 focus:ring-red-500/20 text-red-500 animate-error-blink' : 'border-white/10 bg-surfaceHighlight/50 focus:border-primary-500 focus:ring-primary-500/20 text-slate-200'} px-4 py-3 placeholder-slate-500 outline-none transition-all focus:ring-2`}
+                  value={form[name]}
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    if (name === "nidNumber") val = val.replace(/\D/g, "");
+                    else if (name === "phone" || name === "nomineePhone") val = val.replace(/[^\d+]/g, "");
+                    setForm({ ...form, [name]: val });
+                    if (errors[name]) setErrors({ ...errors, [name]: null });
+                  }}
+                  required={required}
+                  min={type === "number" ? 0 : undefined}
+                />
+              )}
+              {errors[name] && <span className="mt-1.5 block text-sm font-medium text-red-500">{errors[name]}</span>}
             </label>
           ))}
 
@@ -109,6 +170,7 @@ export default function BorrowerProfile() {
                 <input type="file" accept="image/*" className="sr-only" onChange={handleDocumentUpload} />
               </label>
             </div>
+            {errors.nidImageUrl && <div className="mt-3 text-sm font-medium text-red-500">{errors.nidImageUrl}</div>}
 
             {form.nidImageUrl ? (
               <div className="mt-5 grid gap-4 lg:grid-cols-[220px_1fr]">

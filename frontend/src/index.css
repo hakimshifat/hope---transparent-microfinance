@@ -82,6 +82,16 @@
 
   .hover-lift { @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-glow; }
   .hover-glow { @apply transition-all duration-300 hover:shadow-glow hover:border-primary-500/50; }
+
+  @keyframes error-blink {
+    0%, 100% { border-color: rgba(239, 68, 68, 0.5); background-color: rgba(239, 68, 68, 0.05); transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    50% { border-color: rgba(239, 68, 68, 1); background-color: rgba(239, 68, 68, 0.15); transform: translateX(4px); }
+    75% { transform: translateX(-4px); }
+  }
+  .animate-error-blink {
+    animation: error-blink 0.4s ease-in-out 2;
+  }
 }
 
 /* ━━━ Light mode overrides ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -176,4 +186,13 @@ textarea {
   .glass-panel, .glass-panel-light { border-radius: 1rem; }
   table { font-size: 0.8125rem; }
   th, td { white-space: nowrap; }
+}
+
+/* NProgress Theme Overrides */
+#nprogress .bar {
+  background: #10b981 !important;
+  height: 3px !important;
+}
+#nprogress .peg {
+  box-shadow: 0 0 10px #10b981, 0 0 5px #10b981 !important;
 }

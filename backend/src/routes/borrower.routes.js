@@ -7,18 +7,67 @@ const { protect, authorize } = require("../middleware/auth");
 
 const router = express.Router();
 
+const VALID_OCCUPATIONS = [
+  "Farmer / Agriculture",
+  "Day Laborer",
+  "Garment Worker",
+  "Small Business / Shopkeeper",
+  "Rickshaw / Van Puller",
+  "Domestic Worker",
+  "Handicraft / Artisan",
+  "Poultry / Livestock",
+  "Fisherman",
+  "Tailor",
+  "Teacher / Tutor",
+  "Student",
+  "Other"
+];
+
 function profilePayload(body, user) {
   return {
-    fullName: body.fullName || user.fullName,
-    phone: body.phone || user.phone,
-    address: body.address,
-    occupation: body.occupation,
-    monthlyIncome: body.monthlyIncome,
-    nidNumber: body.nidNumber,
+    fullName: body.fullName?.trim() || user.fullName,
+    phone: body.phone?.trim() || user.phone,
+    address: body.address?.trim(),
+    occupation: body.occupation?.trim(),
+    monthlyIncome: body.monthlyIncome !== undefined ? Number(body.monthlyIncome) : undefined,
+    nidNumber: body.nidNumber?.trim(),
     nidImageUrl: body.nidImageUrl,
-    nomineeName: body.nomineeName,
-    nomineePhone: body.nomineePhone
+    nomineeName: body.nomineeName?.trim() || null,
+    nomineePhone: body.nomineePhone?.trim() || null
   };
+}
+
+function validateProfileData(payload) {
+  const errors = [];
+  
+  if (payload.fullName && payload.fullName.length < 3) errors.push("Full name is too short.");
+  if (payload.phone && !/^\+?\d{10,15}$/.test(payload.phone.replace(/\s/g, ""))) errors.push("Invalid phone number format.");
+  if (payload.address !== undefined && payload.address.length < 5) errors.push("Address is too short.");
+  
+  if (payload.occupation !== undefined && !VALID_OCCUPATIONS.includes(payload.occupation)) {
+    errors.push("Invalid occupation selected.");
+  }
+
+  if (payload.monthlyIncome !== undefined) {
+    if (isNaN(payload.monthlyIncome) || payload.monthlyIncome < 0 || payload.monthlyIncome > 100000000) {
+      errors.push("Monthly income must be a valid positive number.");
+    }
+  }
+
+  if (payload.nidNumber !== undefined) {
+    if (!/^\d+$/.test(payload.nidNumber)) errors.push("NID must contain only numbers.");
+    if (![13, 15, 17].includes(payload.nidNumber.length)) errors.push("NID must be exactly 13, 15, or 17 digits.");
+  }
+
+  if (payload.nomineeName && payload.nomineeName.length < 3) {
+    errors.push("Nominee name is too short.");
+  }
+
+  if (payload.nomineePhone && !/^\+?\d{10,15}$/.test(payload.nomineePhone.replace(/\s/g, ""))) {
+    errors.push("Invalid nominee phone number format.");
+  }
+
+  return errors;
 }
 
 router.get(
@@ -46,8 +95,13 @@ router.post(
     if (existing) return res.status(409).json({ message: "Profile already exists" });
 
     const payload = profilePayload(req.body, req.user);
-    if (!payload.address || !payload.occupation || !payload.monthlyIncome || !payload.nidNumber) {
+    if (!payload.address || !payload.occupation || payload.monthlyIncome === undefined || !payload.nidNumber) {
       return res.status(400).json({ message: "Address, occupation, monthlyIncome and nidNumber are required" });
+    }
+
+    const errors = validateProfileData(payload);
+    if (errors.length > 0) {
+      return res.status(400).json({ message: errors.join(" ") });
     }
 
     const profile = await prisma.borrowerProfile.create({
@@ -90,9 +144,15 @@ router.patch(
   authorize("borrower"),
   asyncHandler(async (req, res) => {
     try {
+      const payload = profilePayload(req.body, req.user);
+      const errors = validateProfileData(payload);
+      if (errors.length > 0) {
+        return res.status(400).json({ message: errors.join(" ") });
+      }
+
       const profile = await prisma.borrowerProfile.update({
         where: { userId: req.user.id },
-        data: { ...profilePayload(req.body, req.user), verificationStatus: "pending" }
+        data: { ...payload, verificationStatus: "pending" }
       });
 
       await writeAudit(
